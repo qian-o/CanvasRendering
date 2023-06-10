@@ -8,12 +8,11 @@ namespace CanvasRendering;
 
 internal unsafe class Program
 {
-    private static readonly float[] Vertices = { -0.5f, -0.5f, 0.0f, 0.5f, -0.5f, 0.0f, 0.5f, 0.5f, 0.0f, -0.5f, 0.5f, 0.0f };
-
     private static IWindow window;
     private static GL gl;
-    private static uint vao;
     private static uint shaderProgram;
+    private static uint positionLocation;
+    private static CanvasDraw canvasDraw;
 
     static void Main(string[] args)
     {
@@ -24,73 +23,71 @@ internal unsafe class Program
         window = Window.Create(options);
 
         window.Load += Window_Load;
+        window.Resize += Window_Resize;
         window.Render += Window_Render;
 
         window.Run();
+    }
+
+    private static void Window_Resize(Vector2D<int> obj)
+    {
+        gl.Viewport(0, 0, (uint)obj.X, (uint)obj.Y);
+
+        // 创建正交投影矩阵
+        Matrix4x4 projection = Matrix4x4.CreateOrthographicOffCenter(0.0f, obj.X, obj.Y, 0.0f, -1.0f, 1.0f);
+
+        // 使用着色器程序
+        gl.UseProgram(shaderProgram);
+
+        // 将正交投影矩阵传递给着色器
+        int projectionLocation = gl.GetUniformLocation(shaderProgram, "projection");
+        gl.UniformMatrix4(projectionLocation, 1, false, (float*)&projection);
     }
 
     private static void Window_Load()
     {
         gl = GL.GetApi(window);
 
-        gl.GenBuffers(1, out uint vbo);
-        gl.BindBuffer(GLEnum.ArrayBuffer, vbo);
-        gl.BufferData<float>(GLEnum.ArrayBuffer, (nuint)Vertices.Length * sizeof(float), Vertices, GLEnum.StaticDraw);
+        // 创建顶点着色器
+        uint vs = gl.CreateShader(GLEnum.VertexShader);
+        string vs_source = File.ReadAllText("Shaders/canvas.vs");
+        gl.ShaderSource(vs, vs_source);
+        gl.CompileShader(vs);
 
-        gl.GenVertexArrays(1, out vao);
-        gl.BindVertexArray(vao);
-        gl.VertexAttribPointer(0, 3, GLEnum.Float, false, 3 * sizeof(float), null);
-        gl.EnableVertexAttribArray(0);
+        Console.WriteLine($"VertexShader: {gl.GetShaderInfoLog(vs)}");
 
-        uint vertexShader = gl.CreateShader(GLEnum.VertexShader);
-        gl.ShaderSource(vertexShader, "#version 330 core\nlayout (location = 0) in vec3 a_Position;\nuniform mat4 u_ModelViewProjectionMatrix;\nvoid main()\n{\n    gl_Position = u_ModelViewProjectionMatrix * vec4(a_Position, 1.0);\n}\n");
-        gl.CompileShader(vertexShader);
+        // 创建片段着色器
+        uint fs = gl.CreateShader(GLEnum.FragmentShader);
+        string fs_source = File.ReadAllText("Shaders/canvas.fs");
+        gl.ShaderSource(fs, fs_source);
+        gl.CompileShader(fs);
 
-        uint fragmentShader = gl.CreateShader(GLEnum.FragmentShader);
-        gl.ShaderSource(fragmentShader, "#version 330 core\nout vec4 FragColor;\nvoid main()\n{\n    FragColor = vec4(1.0, 1.0, 1.0, 1.0);\n}\n");
-        gl.CompileShader(fragmentShader);
+        Console.WriteLine($"FragmentShader: {gl.GetShaderInfoLog(fs)}");
 
+        // 创建着色器程序
         shaderProgram = gl.CreateProgram();
-        gl.AttachShader(shaderProgram, vertexShader);
-        gl.AttachShader(shaderProgram, fragmentShader);
+        gl.AttachShader(shaderProgram, vs);
+        gl.AttachShader(shaderProgram, fs);
         gl.LinkProgram(shaderProgram);
 
-        gl.UseProgram(shaderProgram);
+        // 启用顶点属性
+        positionLocation = (uint)gl.GetAttribLocation(shaderProgram, "aPosition");
+        gl.EnableVertexAttribArray(positionLocation);
 
-        // 定义变换矩阵并将其传递给顶点着色器
-        float tx = 0.5f, ty = 0.5f, tz = 0.0f;
-        float angle = 45.0f;
-        float scale = 1.0f;
+        canvasDraw = new CanvasDraw(gl, shaderProgram, positionLocation);
 
-        float[] modelMatrix = new float[] {
-                scale * (float)Math.Cos(angle), scale * (float)Math.Sin(angle), 0.0f, 0.0f,
-                -scale * (float)Math.Sin(angle), scale * (float)Math.Cos(angle), 0.0f, 0.0f,
-                0.0f, 0.0f, scale, 0.0f,
-                tx, ty, tz, 1.0f
-            };
-
-        int modelMatrixLocation = gl.GetUniformLocation(shaderProgram, "u_ModelViewProjectionMatrix");
-        gl.UniformMatrix4(modelMatrixLocation, 1, false, modelMatrix);
-
-        gl.DeleteShader(vertexShader);
-        gl.DeleteShader(fragmentShader);
+        Window_Resize(new Vector2D<int>(800, 600));
     }
 
     private static void Window_Render(double obj)
     {
         gl.ClearColor(Color.White);
-        gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.StencilBufferBit | ClearBufferMask.DepthBufferBit);
+        gl.Clear(ClearBufferMask.ColorBufferBit);
 
-        gl.Viewport(0, 0, (uint)window.Size.X / 2, (uint)window.Size.Y / 2);
+        canvasDraw.DrawRectangle(new RectangleF(0, 0, 200, 200), Color.Red);
 
-        gl.UseProgram(shaderProgram);
-        gl.BindVertexArray(vao);
-        gl.DrawArrays(GLEnum.TriangleFan, 0, 4);
+        canvasDraw.DrawRectangle(new RectangleF(500, 0, 200, 200), new Color[] { Color.Red, Color.Blue, Color.PaleGreen }, new float[] { 0.0f, 0.1f, 1.0f }, 80);
 
-        gl.Viewport(window.Size.X / 2, 0, (uint)window.Size.X / 2, (uint)window.Size.Y / 2);
-
-        gl.UseProgram(shaderProgram);
-        gl.BindVertexArray(vao);
-        gl.DrawArrays(GLEnum.TriangleFan, 0, 4);
+        canvasDraw.DrawRectangle(new RectangleF(500, 400, 200, 100), Color.CadetBlue);
     }
 }
