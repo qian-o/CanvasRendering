@@ -1,34 +1,37 @@
 ﻿using Silk.NET.OpenGLES;
-using System.Collections.Generic;
 using System.Drawing;
+using System.Numerics;
 
 namespace CanvasRendering;
 
 public unsafe class CanvasDraw
 {
-    private readonly GL _gl;
-    private readonly uint _shaderProgram;
-    private readonly uint _positionLocation;
+    public const string Position = "aPosition";
 
-    public CanvasDraw(GL gl, uint shaderProgram, uint positionLocation)
+    private readonly GL _gl;
+    private readonly ShaderProgram _shaderProgram;
+
+    private Shader solidColorShader;
+
+    public CanvasDraw(GL gl, ShaderProgram shaderProgram)
     {
         _gl = gl;
         _shaderProgram = shaderProgram;
-        _positionLocation = positionLocation;
     }
 
     public void DrawRectangle(RectangleF rectangle, Color color)
     {
-        _gl.UseProgram(_shaderProgram);
+        if (solidColorShader == null)
+        {
+            solidColorShader = new Shader(_gl);
+            solidColorShader.LoadShader(GLEnum.FragmentShader, "Shaders/solidColor.frag");
 
-        int useSolidColorLocation = _gl.GetUniformLocation(_shaderProgram, "useSolidColor");
-        _gl.Uniform1(useSolidColorLocation, 1);
+            _shaderProgram.AttachShader(null, solidColorShader);
+        }
 
-        int useGradientColorLocation = _gl.GetUniformLocation(_shaderProgram, "useGradientColor");
-        _gl.Uniform1(useGradientColorLocation, 0);
+        _shaderProgram.Use();
 
-        int solidColorLocation = _gl.GetUniformLocation(_shaderProgram, "solidColor");
-        _gl.Uniform4(solidColorLocation, color.R / 255.0f, color.G / 255.0f, color.B / 255.0f, color.A / 255.0f);
+        _gl.Uniform4(_shaderProgram.GetUniformLocation("solidColor"), ColorToVector4(color));
 
         float[] vertices = new float[] {
             rectangle.X, rectangle.Y, 0.0f,
@@ -41,67 +44,19 @@ public unsafe class CanvasDraw
         _gl.BindBuffer(GLEnum.ArrayBuffer, vbo);
         _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.StaticDraw);
 
-        _gl.VertexAttribPointer(_positionLocation, 3, GLEnum.Float, false, 0, null);
+        _gl.VertexAttribPointer((uint)_shaderProgram.GetAttribLocation(Position), 3, GLEnum.Float, false, 0, null);
 
         _gl.DrawArrays(GLEnum.TriangleFan, 0, 4);
 
         _gl.DeleteBuffer(vbo);
     }
 
-
     public void DrawRectangle(RectangleF rectangle, Color[] colors, float[] ratios, float angle)
     {
-        _gl.UseProgram(_shaderProgram);
+    }
 
-        int useSolidColorLocation = _gl.GetUniformLocation(_shaderProgram, "useSolidColor");
-        _gl.Uniform1(useSolidColorLocation, 0);
-
-        int useGradientColorLocation = _gl.GetUniformLocation(_shaderProgram, "useGradientColor");
-        _gl.Uniform1(useGradientColorLocation, 1);
-
-        int gradientColorsLocation = _gl.GetUniformLocation(_shaderProgram, "gradientColors");
-        List<float> colorsF = new(colors.Length * 4);
-        foreach (Color color in colors)
-        {
-            colorsF.Add(color.R / 255.0f);
-            colorsF.Add(color.G / 255.0f);
-            colorsF.Add(color.B / 255.0f);
-            colorsF.Add(color.A / 255.0f);
-        }
-        float[] colorsA = colorsF.ToArray();
-        fixed (float* c = colorsA)
-        {
-            _gl.Uniform4(gradientColorsLocation, (uint)colors.Length, c);
-        }
-
-        int gradientRatiosLocation = _gl.GetUniformLocation(_shaderProgram, "gradientRatios");
-        fixed (float* r = ratios)
-        {
-            _gl.Uniform4(gradientRatiosLocation, (uint)ratios.Length, r);
-        }
-
-        int gradientAngleLocation = _gl.GetUniformLocation(_shaderProgram, "gradientAngle");
-        _gl.Uniform1(gradientAngleLocation, angle);
-
-        int gradientCountLocation = _gl.GetUniformLocation(_shaderProgram, "gradientCount");
-        _gl.Uniform1(gradientCountLocation, colors.Length);
-
-
-        float[] vertices = new float[] {
-            rectangle.X, rectangle.Y, 0.0f,
-            rectangle.X, rectangle.Bottom, 0.0f,
-            rectangle.Right, rectangle.Bottom, 0.0f,
-            rectangle.Right,  rectangle.Y, 0.0f,
-        };
-
-        uint vbo = _gl.GenBuffer();
-        _gl.BindBuffer(GLEnum.ArrayBuffer, vbo);
-        _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.StaticDraw);
-
-        _gl.VertexAttribPointer(_positionLocation, 3, GLEnum.Float, false, 0, null);
-
-        _gl.DrawArrays(GLEnum.TriangleFan, 0, 4);
-
-        _gl.DeleteBuffer(vbo);
+    private static Vector4 ColorToVector4(Color color)
+    {
+        return new Vector4(color.R / 255.0f, color.G / 255.0f, color.B / 255.0f, color.A / 255.0f);
     }
 }
