@@ -15,13 +15,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<None Update="Shaders\canvas.frag">
+		<None Update="Shaders\texture.frag">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 		<None Update="Shaders\canvas.vert">
 			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
-		<None Update="Shaders\red.frag">
+		<None Update="Shaders\texture.frag">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
 		</None>
 		<None Update="Shaders\solidColor.frag">

@@ -50,10 +50,6 @@ public unsafe class CanvasDraw
         _gl.DeleteBuffer(vbo);
     }
 
-    public void DrawRectangle(RectangleF rectangle, Color[] colors, float[] ratios, float angle)
-    {
-    }
-
     private static Vector4 ColorToVector4(Color color)
     {
         return new Vector4(color.R / 255.0f, color.G / 255.0f, color.B / 255.0f, color.A / 255.0f);
