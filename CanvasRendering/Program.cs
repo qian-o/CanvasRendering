@@ -62,7 +62,7 @@ internal unsafe class Program
 
         canvasDraw.DrawRectangle(new RectangleF(500, 0, 200, 200), new Color[] { Color.Red, Color.Blue, Color.PaleGreen }, new float[] { 0.0f, 0.1f, 1.0f }, 80);
 
-        canvasDraw.DrawRectangle(new RectangleF(500, 400, 200, 100), Color.CadetBlue);
+        canvasDraw.DrawRectangle(new RectangleF(window.Size.X - 200, window.Size.Y - 100, 200, 100), Color.CadetBlue);
     }
 
     private static void UpdateCanvas()

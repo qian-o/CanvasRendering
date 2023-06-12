@@ -11,6 +11,7 @@ public unsafe class CanvasDraw
     private readonly GL _gl;
     private readonly ShaderProgram _shaderProgram;
 
+    private Shader currentShader;
     private Shader solidColorShader;
 
     public CanvasDraw(GL gl, ShaderProgram shaderProgram)
@@ -25,11 +26,9 @@ public unsafe class CanvasDraw
         {
             solidColorShader = new Shader(_gl);
             solidColorShader.LoadShader(GLEnum.FragmentShader, "Shaders/solidColor.frag");
-
-            _shaderProgram.AttachShader(null, solidColorShader);
         }
 
-        _shaderProgram.Use();
+        UseShader(solidColorShader);
 
         _gl.Uniform4(_shaderProgram.GetUniformLocation("solidColor"), ColorToVector4(color));
 
@@ -58,5 +57,17 @@ public unsafe class CanvasDraw
     private static Vector4 ColorToVector4(Color color)
     {
         return new Vector4(color.R / 255.0f, color.G / 255.0f, color.B / 255.0f, color.A / 255.0f);
+    }
+
+    private void UseShader(Shader shader)
+    {
+        if (currentShader != shader)
+        {
+            _shaderProgram.AttachShader(null, shader);
+
+            currentShader = shader;
+        }
+
+        _shaderProgram.Use();
     }
 }
