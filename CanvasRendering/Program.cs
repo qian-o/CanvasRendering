@@ -1,7 +1,6 @@
 ﻿using Silk.NET.Maths;
 using Silk.NET.OpenGLES;
 using Silk.NET.Windowing;
-using System;
 using System.Drawing;
 using System.Numerics;
 
@@ -12,9 +11,7 @@ internal unsafe class Program
     private static IWindow window;
     private static GL gl;
     private static ShaderProgram shaderProgram;
-
-    private static Canvas leftTop;
-    private static Canvas rightBottom;
+    private static Canvas canvas;
 
     static void Main(string[] args)
     {
@@ -58,40 +55,13 @@ internal unsafe class Program
         gl.ClearColor(Color.White);
         gl.Clear(ClearBufferMask.ColorBufferBit);
 
-        // 左上角
-        {
-            leftTop ??= new(gl, new Rectangle<int>(100, 100, 200, 200));
+        canvas ??= new Canvas(gl, new Rectangle<int>(10, 10, 200, 200));
+        canvas.Clear();
+        canvas.DrawRectangle(new RectangleF(0, 0, 200, 200), Color.Red);
 
-            leftTop.Clear();
-            leftTop.DrawRectangle(new RectangleF(10, 10, 100, 100), Color.Red);
+        UpdateCanvas();
 
-            float[] vertices = new float[] {
-                0.0f, 0.0f,
-                0.0f, 200.0f,
-                200.0f,  0.0f,
-                200.0f, 200.0f
-            };
-            fixed (void* pointer = vertices)
-            {
-                UpdateCanvas();
-
-                shaderProgram.Use();
-
-                gl.EnableVertexAttribArray(0);
-
-                gl.Uniform2(shaderProgram.GetUniformLocation("framePosition"), 100.0f, 100.0f);
-
-                gl.ActiveTexture(TextureUnit.Texture0);
-                gl.BindTexture(TextureTarget.Texture2D, leftTop.Texture);
-                gl.Uniform1(shaderProgram.GetUniformLocation("tex"), 0);
-
-                gl.VertexAttribPointer(0, 2, GLEnum.Float, false, 0, pointer);
-
-                gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
-
-                gl.DisableVertexAttribArray(0);
-            }
-        }
+        DrawCanvas(canvas);
 
         window.SwapBuffers();
     }
@@ -111,5 +81,26 @@ internal unsafe class Program
 
         // 将正交投影矩阵传递给着色器
         gl.UniformMatrix4(shaderProgram.GetUniformLocation("projection"), 1, false, (float*)&projection);
+    }
+
+    private static void DrawCanvas(Canvas canvas)
+    {
+        shaderProgram.Use();
+
+        gl.EnableVertexAttribArray(0);
+        gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
+        gl.VertexAttribPointer(0, 2, GLEnum.Float, false, 0, null);
+
+        gl.EnableVertexAttribArray(1);
+        gl.BindBuffer(GLEnum.ArrayBuffer, canvas.TexCoordBuffer);
+        gl.VertexAttribPointer(1, 2, GLEnum.Float, false, 0, null);
+
+        gl.BindTexture(TextureTarget.Texture2D, canvas.Texture);
+        gl.DrawArrays(PrimitiveType.TriangleStrip, 0, 4);
+
+        gl.BindTexture(TextureTarget.Texture2D, 0);
+        gl.DisableVertexAttribArray(0);
+        gl.DisableVertexAttribArray(1);
+        gl.UseProgram(0);
     }
 }

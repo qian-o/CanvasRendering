@@ -2,10 +2,12 @@
 
 precision highp float;
 
-out vec4 fragColor;
+in vec2 fragTexCoord;
 
 uniform vec4 solidColor;
 
+out vec4 fragColor;
+
 void main() {
-    fragColor = solidColor;
+    fragColor = vec4(1.0f, 0.0f, 0.0f, 1.0f);
 }
