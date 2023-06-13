@@ -52,12 +52,13 @@ internal unsafe class Program
 
     private static void Window_Render(double obj)
     {
+        canvas ??= new Canvas(gl, new Rectangle<int>(10, 10, 200, 200));
+
+        canvas.Clear();
+        canvas.DrawRectangle(new RectangleF(10, 10, 20.0f, 20.0f), Color.Red);
+
         gl.ClearColor(Color.White);
         gl.Clear(ClearBufferMask.ColorBufferBit);
-
-        canvas ??= new Canvas(gl, new Rectangle<int>(10, 10, 200, 200));
-        canvas.Clear();
-        canvas.DrawRectangle(new RectangleF(0, 0, 200, 200), Color.Red);
 
         UpdateCanvas();
 
@@ -96,9 +97,11 @@ internal unsafe class Program
         gl.VertexAttribPointer(1, 2, GLEnum.Float, false, 0, null);
 
         gl.BindTexture(TextureTarget.Texture2D, canvas.Texture);
+
         gl.DrawArrays(PrimitiveType.TriangleStrip, 0, 4);
 
         gl.BindTexture(TextureTarget.Texture2D, 0);
+
         gl.DisableVertexAttribArray(0);
         gl.DisableVertexAttribArray(1);
         gl.UseProgram(0);

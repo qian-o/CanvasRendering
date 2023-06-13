@@ -15,6 +15,9 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<None Update="Shaders\canvas1.vert">
+		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
 		<None Update="Shaders\texture.frag">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
