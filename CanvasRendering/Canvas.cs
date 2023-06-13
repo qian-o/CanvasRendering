@@ -10,9 +10,10 @@ public unsafe class Canvas
     private readonly GL _gl;
     private readonly Rectangle<int> _rectangle;
 
-    private Shader vs;
-    private Shader fs;
-    private ShaderProgram program;
+    private readonly Shader vs;
+    private readonly Shader fs;
+    private readonly ShaderProgram program;
+    private Vector2D<int> actualSize;
 
     public uint Texture { get; private set; }
 
@@ -42,6 +43,9 @@ public unsafe class Canvas
         // 绑定FBO对象和纹理对象，以便将渲染结果存储到对应的纹理中。
         _gl.BindFramebuffer(FramebufferTarget.Framebuffer, Fbo);
 
+        _gl.ClearColor(Color.White);
+        _gl.Clear(ClearBufferMask.ColorBufferBit);
+
         program.Use();
 
         uint positionAttribute = (uint)program.GetAttribLocation("position");
@@ -49,7 +53,7 @@ public unsafe class Canvas
         _gl.EnableVertexAttribArray(positionAttribute);
 
         // 创建正交投影矩阵
-        Matrix4x4 projection = Matrix4x4.CreateOrthographicOffCenter(0.0f, (uint)_rectangle.Size.X, (uint)_rectangle.Size.Y, 0.0f, -1.0f, 1.0f);
+        Matrix4x4 projection = Matrix4x4.CreateOrthographicOffCenter(0.0f, (uint)actualSize.X, (uint)actualSize.Y, 0.0f, -1.0f, 1.0f);
 
         // 将正交投影矩阵传递给着色器
         _gl.UniformMatrix4(program.GetUniformLocation("projection"), 1, false, (float*)&projection);
@@ -58,9 +62,9 @@ public unsafe class Canvas
 
         float[] vertices = new float[] {
             0, 0,
-            0, _rectangle.Size.Y,
-            _rectangle.Size.X, _rectangle.Size.Y,
-            _rectangle.Size.X,  0
+            0, actualSize.Y,
+            actualSize.X, actualSize.Y,
+            actualSize.X,  0
         };
 
         uint vbo = _gl.GenBuffer();
@@ -78,9 +82,24 @@ public unsafe class Canvas
 
     private void LoadFrame()
     {
+        _gl.GetInteger(GLEnum.ImplementationColorReadFormat, out int format);
+        _gl.GetInteger(GLEnum.ImplementationColorReadType, out int type);
+        _gl.GetInteger(GLEnum.MaxTextureSize, out int maxTextureSize);
+
+        if (_rectangle.Size.X * _rectangle.Size.Y > maxTextureSize)
+        {
+            double scale = Math.Sqrt((double)maxTextureSize / (_rectangle.Size.X * _rectangle.Size.Y));
+
+            actualSize = new Vector2D<int>(Convert.ToInt32(_rectangle.Size.X * scale), Convert.ToInt32(_rectangle.Size.Y * scale));
+        }
+        else
+        {
+            actualSize = new Vector2D<int>(_rectangle.Size.X, _rectangle.Size.Y);
+        }
+
         Texture = _gl.GenTexture();
         _gl.BindTexture(TextureTarget.Texture2D, Texture);
-        _gl.TexImage2D(GLEnum.Texture2D, 0, (int)InternalFormat.Rgba, (uint)_rectangle.Size.X, (uint)_rectangle.Size.Y, 0, PixelFormat.Rgba, PixelType.UnsignedByte, IntPtr.Zero);
+        _gl.TexImage2D(GLEnum.Texture2D, 0, (int)InternalFormat.Rgba, (uint)actualSize.X, (uint)actualSize.Y, 0, (PixelFormat)format, (PixelType)type, IntPtr.Zero);
         _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
         _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
         _gl.BindTexture(TextureTarget.Texture2D, 0);

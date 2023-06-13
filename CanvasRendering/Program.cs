@@ -19,6 +19,8 @@ internal unsafe class Program
     static void Main(string[] args)
     {
         WindowOptions options = WindowOptions.Default;
+        options.Samples = 2;
+        options.VSync = true;
         options.Title = "Texture Rendering";
         options.Size = new Vector2D<int>(800, 600);
         options.API = new GraphicsAPI(ContextAPI.OpenGLES, new APIVersion(3, 2));
@@ -120,6 +122,8 @@ internal unsafe class Program
 
             gl.DrawArrays(GLEnum.TriangleFan, 0, 4);
         }
+
+        window.SwapBuffers();
     }
 
     private static void UpdateCanvas()
