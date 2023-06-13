@@ -50,9 +50,6 @@ internal unsafe class Program
         shaderProgram.UpdateAttach += UpdateCanvas;
         shaderProgram.AttachShader(vs, fs);
 
-        // 启用顶点属性
-        gl.EnableVertexAttribArray((uint)shaderProgram.GetAttribLocation("position"));
-
         UpdateCanvas();
     }
 
@@ -65,62 +62,35 @@ internal unsafe class Program
         {
             leftTop ??= new(gl, new Rectangle<int>(100, 100, 200, 200));
 
-            leftTop.Draw(Color.Indigo);
-
-            shaderProgram.Use();
-
-            uint positionAttribute = (uint)shaderProgram.GetAttribLocation("position");
-
-            gl.Uniform2(shaderProgram.GetUniformLocation("framePosition"), 100.0f, 100.0f);
-            gl.ActiveTexture(TextureUnit.Texture0);
-            gl.BindTexture(TextureTarget.Texture2D, leftTop.Texture);
-            gl.Uniform1(shaderProgram.GetUniformLocation("tex"), 0);
+            leftTop.Clear();
+            leftTop.DrawRectangle(new RectangleF(10, 10, 100, 100), Color.Red);
 
             float[] vertices = new float[] {
-                0, 0,
-                0, 200,
-                200, 200,
-                200,  0
+                0.0f, 0.0f,
+                0.0f, 200.0f,
+                200.0f,  0.0f,
+                200.0f, 200.0f
             };
+            fixed (void* pointer = vertices)
+            {
+                UpdateCanvas();
 
-            uint vbo = gl.GenBuffer();
-            gl.BindBuffer(GLEnum.ArrayBuffer, vbo);
-            gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.StaticDraw);
+                shaderProgram.Use();
 
-            gl.VertexAttribPointer(positionAttribute, 2, GLEnum.Float, false, 0, null);
+                gl.EnableVertexAttribArray(0);
 
-            gl.DrawArrays(GLEnum.TriangleFan, 0, 4);
-        }
+                gl.Uniform2(shaderProgram.GetUniformLocation("framePosition"), 100.0f, 100.0f);
 
-        // 右下角
-        {
-            rightBottom ??= new(gl, new Rectangle<int>(window.Size.X - 200, window.Size.Y - 100, 200, 100));
+                gl.ActiveTexture(TextureUnit.Texture0);
+                gl.BindTexture(TextureTarget.Texture2D, leftTop.Texture);
+                gl.Uniform1(shaderProgram.GetUniformLocation("tex"), 0);
 
-            rightBottom.Draw(Color.Blue);
+                gl.VertexAttribPointer(0, 2, GLEnum.Float, false, 0, pointer);
 
-            shaderProgram.Use();
+                gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
 
-            uint positionAttribute = (uint)shaderProgram.GetAttribLocation("position");
-
-            gl.Uniform2(shaderProgram.GetUniformLocation("framePosition"), Convert.ToSingle(window.Size.X - 200), Convert.ToSingle(window.Size.Y - 100));
-            gl.ActiveTexture(TextureUnit.Texture0);
-            gl.BindTexture(TextureTarget.Texture2D, rightBottom.Texture);
-            gl.Uniform1(shaderProgram.GetUniformLocation("tex"), 0);
-
-            float[] vertices = new float[] {
-                0, 0,
-                0, 200,
-                200, 200,
-                200,  0
-            };
-
-            uint vbo = gl.GenBuffer();
-            gl.BindBuffer(GLEnum.ArrayBuffer, vbo);
-            gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.StaticDraw);
-
-            gl.VertexAttribPointer(positionAttribute, 2, GLEnum.Float, false, 0, null);
-
-            gl.DrawArrays(GLEnum.TriangleFan, 0, 4);
+                gl.DisableVertexAttribArray(0);
+            }
         }
 
         window.SwapBuffers();

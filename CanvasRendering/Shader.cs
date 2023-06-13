@@ -31,4 +31,9 @@ public class Shader
             ShaderId = s;
         }
     }
+
+    public void DeleteShader()
+    {
+        _gl.DeleteShader(ShaderId);
+    }
 }
