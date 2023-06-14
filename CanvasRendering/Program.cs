@@ -1,8 +1,10 @@
-﻿using Silk.NET.Maths;
+﻿using CanvasRendering.Helpers;
+using Silk.NET.Maths;
 using Silk.NET.OpenGLES;
 using Silk.NET.Windowing;
 using System.Drawing;
 using System.Numerics;
+using Shader = CanvasRendering.Helpers.Shader;
 
 namespace CanvasRendering;
 
@@ -10,11 +12,16 @@ internal unsafe class Program
 {
     private static IWindow window;
     private static GL gl;
+    private static Shader defaultVertex;
+    private static Shader solidColor;
     private static ShaderProgram shaderProgram;
-    private static Canvas canvas;
+    private static uint positionAttrib;
+    private static uint vbo;
 
     static void Main(string[] args)
     {
+        Console.WriteLine(args);
+
         WindowOptions options = WindowOptions.Default;
         options.Samples = 2;
         options.VSync = true;
@@ -34,35 +41,47 @@ internal unsafe class Program
     {
         gl = GL.GetApi(window);
 
-        // 创建顶点着色器
-        Shader vs = new(gl);
-        vs.LoadShader(GLEnum.VertexShader, "Shaders/canvas.vert");
+        defaultVertex = new Shader(gl, GLEnum.VertexShader, File.ReadAllText("Shaders/defaultVertex.vert"));
+        solidColor = new Shader(gl, GLEnum.FragmentShader, File.ReadAllText("Shaders/solidColor.frag"));
 
-        // 创建片段着色器
-        Shader fs = new(gl);
-        fs.LoadShader(GLEnum.FragmentShader, "Shaders/texture.frag");
-
-        // 创建着色器程序
         shaderProgram = new ShaderProgram(gl);
-        shaderProgram.UpdateAttach += UpdateCanvas;
-        shaderProgram.AttachShader(vs, fs);
+        shaderProgram.Attach(defaultVertex, solidColor);
+
+        positionAttrib = (uint)gl.GetAttribLocation(shaderProgram.Id, "position");
+
+        float[] vertices = new float[] {
+            -0.5f, -0.5f, 0.0f,
+            0.5f, -0.5f, 0.0f,
+            -0.5f,  0.5f, 0.0f,
+            0.5f,  0.5f, 0.0f
+        };
+
+        vbo = gl.GenBuffer();
+
+        gl.BindBuffer(GLEnum.ArrayBuffer, vbo);
+        gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, BufferUsageARB.StaticDraw);
+        gl.BindBuffer(GLEnum.ArrayBuffer, 0);
 
         UpdateCanvas();
     }
 
     private static void Window_Render(double obj)
     {
-        canvas ??= new Canvas(gl, new Rectangle<int>(10, 10, 200, 200));
-
-        canvas.Clear();
-        canvas.DrawRectangle(new RectangleF(10, 10, 20.0f, 20.0f), Color.Red);
-
         gl.ClearColor(Color.White);
         gl.Clear(ClearBufferMask.ColorBufferBit);
 
-        UpdateCanvas();
+        gl.EnableVertexAttribArray(positionAttrib);
 
-        DrawCanvas(canvas);
+        gl.BindBuffer(GLEnum.ArrayBuffer, vbo);
+        gl.VertexAttribPointer(positionAttrib, 3, GLEnum.Float, false, 0, null);
+
+        gl.UseProgram(shaderProgram.Id);
+
+        gl.Uniform4(gl.GetUniformLocation(shaderProgram.Id, "solidColor"), ColorToVector4(Color.MediumSlateBlue));
+
+        gl.DrawArrays(GLEnum.TriangleStrip, 0, 3);
+
+        gl.DisableVertexAttribArray(positionAttrib);
 
         window.SwapBuffers();
     }
@@ -73,37 +92,10 @@ internal unsafe class Program
         uint height = (uint)window.Size.Y;
 
         gl.Viewport(0, 0, width, height);
-
-        // 创建正交投影矩阵
-        Matrix4x4 projection = Matrix4x4.CreateOrthographicOffCenter(0.0f, width, height, 0.0f, -1.0f, 1.0f);
-
-        // 使用着色器程序
-        shaderProgram.Use();
-
-        // 将正交投影矩阵传递给着色器
-        gl.UniformMatrix4(shaderProgram.GetUniformLocation("projection"), 1, false, (float*)&projection);
     }
 
-    private static void DrawCanvas(Canvas canvas)
+    private static Vector4 ColorToVector4(Color color)
     {
-        shaderProgram.Use();
-
-        gl.EnableVertexAttribArray(0);
-        gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
-        gl.VertexAttribPointer(0, 2, GLEnum.Float, false, 0, null);
-
-        gl.EnableVertexAttribArray(1);
-        gl.BindBuffer(GLEnum.ArrayBuffer, canvas.TexCoordBuffer);
-        gl.VertexAttribPointer(1, 2, GLEnum.Float, false, 0, null);
-
-        gl.BindTexture(TextureTarget.Texture2D, canvas.Texture);
-
-        gl.DrawArrays(PrimitiveType.TriangleStrip, 0, 4);
-
-        gl.BindTexture(TextureTarget.Texture2D, 0);
-
-        gl.DisableVertexAttribArray(0);
-        gl.DisableVertexAttribArray(1);
-        gl.UseProgram(0);
+        return new Vector4(color.R / 255.0f, color.G / 255.0f, color.B / 255.0f, color.A / 255.0f);
     }
 }
