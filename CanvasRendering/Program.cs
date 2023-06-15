@@ -38,7 +38,7 @@ internal unsafe class Program
 
     private static void Window_Load()
     {
-        gl = GL.GetApi(window);
+        gl = window.CreateOpenGLES();
 
         shderHelper = new ShaderHelper(gl);
 
@@ -69,6 +69,8 @@ internal unsafe class Program
         height = obj.Y;
 
         gl.Viewport(0, 0, (uint)obj.X, (uint)obj.Y);
+
+        window.DoRender();
     }
 
     private static void Window_Render(double obj)
