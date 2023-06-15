@@ -3,10 +3,14 @@ using Silk.NET.OpenGLES;
 
 namespace CanvasRendering.Helpers;
 
-public class Framebuffer : IDisposable
+public unsafe class Framebuffer : IDisposable
 {
     private readonly GL _gl;
     private readonly Vector2D<uint> _size;
+
+    public PixelFormat Format { get; }
+
+    public PixelType Type { get; }
 
     public uint Fbo { get; }
 
@@ -22,6 +26,9 @@ public class Framebuffer : IDisposable
         _gl.GetInteger(GLEnum.ImplementationColorReadFormat, out int format);
         _gl.GetInteger(GLEnum.ImplementationColorReadType, out int type);
 
+        Format = (PixelFormat)format;
+        Type = (PixelType)type;
+
         Fbo = _gl.GenFramebuffer();
         Depth = _gl.GenRenderbuffer();
         Texture = _gl.GenTexture();
@@ -33,7 +40,7 @@ public class Framebuffer : IDisposable
         _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
         _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
 
-        _gl.TexImage2D(GLEnum.Texture2D, 0, (int)InternalFormat.Rgba, _size.X, _size.Y, 0, (PixelFormat)format, (PixelType)type, IntPtr.Zero);
+        _gl.TexImage2D(GLEnum.Texture2D, 0, (int)InternalFormat.Rgba, _size.X, _size.Y, 0, Format, Type, IntPtr.Zero);
 
         _gl.BindTexture(TextureTarget.Texture2D, 0);
 
@@ -48,6 +55,17 @@ public class Framebuffer : IDisposable
         _gl.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.StencilAttachment, RenderbufferTarget.Renderbuffer, Depth);
 
         _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+    }
+
+    public void GenBmp(string filePath)
+    {
+        byte[] bytes = new byte[_size.X * _size.Y * 4];
+
+        fixed (void* data = bytes)
+        {
+            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, Fbo);
+            _gl.ReadnPixels(0, 0, _size.X, _size.Y, (GLEnum)Format, (GLEnum)Type, (uint)bytes.Length, data);
+        }
     }
 
     public void Dispose()

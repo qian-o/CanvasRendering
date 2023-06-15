@@ -43,10 +43,10 @@ public unsafe class Canvas : IDisposable
         Framebuffer = new Framebuffer(gl, _actualSize);
 
         float[] vertices = new float[] {
-            _rectangle.Origin.X, _rectangle.Origin.Y,
-            _rectangle.Origin.X, _rectangle.Max.Y,
-            _rectangle.Max.X, _rectangle.Origin.Y,
-            _rectangle.Max.X, _rectangle.Max.Y
+            _rectangle.Origin.X, _rectangle.Origin.Y, 0,
+            _rectangle.Origin.X, _rectangle.Max.Y, 0,
+            _rectangle.Max.X, _rectangle.Origin.Y, 0,
+            _rectangle.Max.X, _rectangle.Max.Y, 0
         };
 
         VertexBuffer = _gl.GenBuffer();
@@ -56,15 +56,27 @@ public unsafe class Canvas : IDisposable
 
         float[] texCoords = new float[] {
             0, 0,
-            0, _rectangle.Size.Y,
-            _rectangle.Size.X, 0,
-            _rectangle.Size.X, _rectangle.Size.Y
+            0, 1,
+            1, 0,
+            1, 1
         };
 
         TexCoordBuffer = _gl.GenBuffer();
         _gl.BindBuffer(GLEnum.ArrayBuffer, TexCoordBuffer);
         _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(texCoords.Length * sizeof(float)), texCoords, BufferUsageARB.StaticDraw);
         _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
+    }
+
+    public void Clear(Color color)
+    {
+        _gl.BindFramebuffer(FramebufferTarget.Framebuffer, Framebuffer.Fbo);
+
+        _gl.Viewport(0, 0, _actualSize.X, _actualSize.Y);
+
+        _gl.ClearColor(color);
+        _gl.Clear(ClearBufferMask.ColorBufferBit);
+
+        _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
     }
 
     public void DrawRectangle(RectangleF rectangle, Color color)
@@ -98,11 +110,11 @@ public unsafe class Canvas : IDisposable
 
         _gl.UseProgram(shaderProgram.Id);
 
-        Matrix4x4 projection = Matrix4x4.CreateOrthographicOffCenter(0.0f, _actualSize.X, _actualSize.Y, 0.0f, -1.0f, 1.0f);
+        Matrix4x4 projection = Matrix4x4.CreateOrthographicOffCenter(0.0f, _actualSize.X, 0.0f, _actualSize.Y, -1.0f, 1.0f);
 
         _gl.UniformMatrix4(_gl.GetUniformLocation(shaderProgram.Id, "projection"), 1, false, (float*)&projection);
 
-        _gl.Uniform4(_gl.GetUniformLocation(shaderProgram.Id, "solidColor"), ColorToVector4(color));
+        _gl.Uniform4(_gl.GetUniformLocation(shaderProgram.Id, "solidColor"), color.ToVector4());
 
         _gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
 
@@ -127,10 +139,5 @@ public unsafe class Canvas : IDisposable
         _gl.DeleteBuffer(TexCoordBuffer);
 
         GC.SuppressFinalize(this);
-    }
-
-    private static Vector4 ColorToVector4(Color color)
-    {
-        return new Vector4(color.R / 255.0f, color.G / 255.0f, color.B / 255.0f, color.A / 255.0f);
     }
 }

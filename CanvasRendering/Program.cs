@@ -11,10 +11,10 @@ internal unsafe class Program
 {
     private static IWindow window;
     private static GL gl;
-    private static ShaderHelper shderHelper;
+    private static ShaderHelper shaderHelper;
     private static ShaderProgram shaderProgram;
     private static uint positionAttrib;
-    private static uint vbo;
+    private static uint texCoordAttrib;
     private static int width = 800, height = 600;
 
     static void Main(string[] args)
@@ -40,35 +40,19 @@ internal unsafe class Program
     {
         gl = window.CreateOpenGLES();
 
-        shderHelper = new ShaderHelper(gl);
+        shaderHelper = new ShaderHelper(gl);
 
         shaderProgram = new ShaderProgram(gl);
-        shaderProgram.Attach(shderHelper.GetShader("defaultVertex.vert"), shderHelper.GetShader("solidColor.frag"));
+        shaderProgram.Attach(shaderHelper.GetShader("defaultVertex.vert"), shaderHelper.GetShader("texture.frag"));
 
         positionAttrib = (uint)gl.GetAttribLocation(shaderProgram.Id, "position");
-
-        float[] vertices = new float[] {
-            10.0f, 10.0f, 0.0f,
-            10.0f, 110.0f, 0.0f,
-            110.0f, 10.0f, 0.0f,
-            110.0f, 110.0f, 0.0f
-        };
-
-        vbo = gl.GenBuffer();
-
-        gl.BindBuffer(GLEnum.ArrayBuffer, vbo);
-        gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, BufferUsageARB.StaticDraw);
-        gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-
-        Canvas canvas = new(gl, shderHelper, new Rectangle<int>(0, 0, 200, 200));
+        texCoordAttrib = (uint)gl.GetAttribLocation(shaderProgram.Id, "texCoord");
     }
 
     private static void Window_Resize(Vector2D<int> obj)
     {
         width = obj.X;
         height = obj.Y;
-
-        gl.Viewport(0, 0, (uint)obj.X, (uint)obj.Y);
 
         window.DoRender();
     }
@@ -78,10 +62,51 @@ internal unsafe class Program
         gl.ClearColor(Color.White);
         gl.Clear(ClearBufferMask.ColorBufferBit);
 
-        gl.EnableVertexAttribArray(positionAttrib);
+        // 左上
+        {
+            Canvas canvas = new(gl, shaderHelper, new Rectangle<int>(10, 10, 200, 200));
 
-        gl.BindBuffer(GLEnum.ArrayBuffer, vbo);
+            canvas.Clear(Color.AliceBlue);
+
+            canvas.DrawRectangle(new RectangleF(10, 10, 20, 20), Color.Red);
+
+            canvas.DrawRectangle(new RectangleF(40, 40, 20, 20), Color.Blue);
+
+            DrawCanvas(canvas);
+
+            canvas.Dispose();
+        }
+
+        // 右下
+        {
+            Canvas canvas = new(gl, shaderHelper, new Rectangle<int>(width - 200, height - 100, 200, 100));
+
+            canvas.Clear(Color.AliceBlue);
+
+            canvas.DrawRectangle(new RectangleF(10, 10, 20, 20), Color.Red);
+
+            canvas.DrawRectangle(new RectangleF(40, 40, 20, 20), Color.Blue);
+
+            DrawCanvas(canvas);
+
+            canvas.Dispose();
+        }
+
+        window.SwapBuffers();
+    }
+
+    private static void DrawCanvas(Canvas canvas)
+    {
+        gl.Viewport(0, 0, (uint)width, (uint)height);
+
+        gl.EnableVertexAttribArray(positionAttrib);
+        gl.EnableVertexAttribArray(texCoordAttrib);
+
+        gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
         gl.VertexAttribPointer(positionAttrib, 3, GLEnum.Float, false, 0, null);
+
+        gl.BindBuffer(GLEnum.ArrayBuffer, canvas.TexCoordBuffer);
+        gl.VertexAttribPointer(texCoordAttrib, 2, GLEnum.Float, false, 0, null);
 
         gl.UseProgram(shaderProgram.Id);
 
@@ -89,17 +114,15 @@ internal unsafe class Program
 
         gl.UniformMatrix4(gl.GetUniformLocation(shaderProgram.Id, "projection"), 1, false, (float*)&projection);
 
-        gl.Uniform4(gl.GetUniformLocation(shaderProgram.Id, "solidColor"), ColorToVector4(Color.MediumSlateBlue));
+        gl.ActiveTexture(GLEnum.Texture0);
+        gl.BindTexture(GLEnum.Texture2D, canvas.Framebuffer.Texture);
+        gl.Uniform1(gl.GetUniformLocation(shaderProgram.Id, "tex"), 0);
 
         gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
 
+        gl.BindTexture(GLEnum.Texture2D, 0);
+
         gl.DisableVertexAttribArray(positionAttrib);
-
-        window.SwapBuffers();
-    }
-
-    private static Vector4 ColorToVector4(Color color)
-    {
-        return new Vector4(color.R / 255.0f, color.G / 255.0f, color.B / 255.0f, color.A / 255.0f);
+        gl.DisableVertexAttribArray(texCoordAttrib);
     }
 }
