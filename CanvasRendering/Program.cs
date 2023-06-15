@@ -1,4 +1,5 @@
-﻿using Silk.NET.Maths;
+﻿using CanvasRendering.Helpers;
+using Silk.NET.Maths;
 using Silk.NET.OpenGLES;
 using Silk.NET.Windowing;
 using System.Drawing;
@@ -10,19 +11,26 @@ internal unsafe class Program
 {
     private static IWindow window;
     private static GL gl;
+    private static ShaderHelper shaderHelper;
     private static ShaderProgram shaderProgram;
-    private static CanvasDraw canvasDraw;
+    private static uint positionAttrib;
+    private static uint texCoordAttrib;
+    private static int width = 800, height = 600;
 
     static void Main(string[] args)
     {
+        Console.WriteLine(args);
+
         WindowOptions options = WindowOptions.Default;
+        options.Samples = 2;
+        options.VSync = true;
         options.Title = "Texture Rendering";
-        options.Size = new Vector2D<int>(800, 600);
+        options.Size = new Vector2D<int>(width, height);
         options.API = new GraphicsAPI(ContextAPI.OpenGLES, new APIVersion(3, 2));
         window = Window.Create(options);
 
         window.Load += Window_Load;
-        window.Resize += _ => UpdateCanvas();
+        window.Resize += Window_Resize;
         window.Render += Window_Render;
 
         window.Run();
@@ -30,27 +38,23 @@ internal unsafe class Program
 
     private static void Window_Load()
     {
-        gl = GL.GetApi(window);
+        gl = window.CreateOpenGLES();
 
-        // 创建顶点着色器
-        Shader vs = new(gl);
-        vs.LoadShader(GLEnum.VertexShader, "Shaders/canvas.vert");
+        shaderHelper = new ShaderHelper(gl);
 
-        // 创建片段着色器
-        Shader fs = new(gl);
-        fs.LoadShader(GLEnum.FragmentShader, "Shaders/red.frag");
-
-        // 创建着色器程序
         shaderProgram = new ShaderProgram(gl);
-        shaderProgram.UpdateAttach += UpdateCanvas;
-        shaderProgram.AttachShader(vs, fs);
+        shaderProgram.Attach(shaderHelper.GetShader("defaultVertex.vert"), shaderHelper.GetShader("texture.frag"));
 
-        // 启用顶点属性
-        gl.EnableVertexAttribArray((uint)shaderProgram.GetAttribLocation("aPosition"));
+        positionAttrib = (uint)gl.GetAttribLocation(shaderProgram.Id, "position");
+        texCoordAttrib = (uint)gl.GetAttribLocation(shaderProgram.Id, "texCoord");
+    }
 
-        canvasDraw = new CanvasDraw(gl, shaderProgram);
+    private static void Window_Resize(Vector2D<int> obj)
+    {
+        width = obj.X;
+        height = obj.Y;
 
-        UpdateCanvas();
+        window.DoRender();
     }
 
     private static void Window_Render(double obj)
@@ -58,27 +62,67 @@ internal unsafe class Program
         gl.ClearColor(Color.White);
         gl.Clear(ClearBufferMask.ColorBufferBit);
 
-        canvasDraw.DrawRectangle(new RectangleF(0, 0, 200, 200), Color.Red);
+        // 左上
+        {
+            Canvas canvas = new(gl, shaderHelper, new Rectangle<int>(10, 10, 200, 200));
 
-        canvasDraw.DrawRectangle(new RectangleF(500, 0, 200, 200), new Color[] { Color.Red, Color.Blue, Color.PaleGreen }, new float[] { 0.0f, 0.1f, 1.0f }, 80);
+            canvas.Clear(Color.AliceBlue);
 
-        canvasDraw.DrawRectangle(new RectangleF(window.Size.X - 200, window.Size.Y - 100, 200, 100), Color.CadetBlue);
+            canvas.DrawRectangle(new RectangleF(10, 10, 20, 20), Color.Red);
+
+            canvas.DrawRectangle(new RectangleF(40, 40, 20, 20), Color.Blue);
+
+            DrawCanvas(canvas);
+
+            canvas.Dispose();
+        }
+
+        // 右下
+        {
+            Canvas canvas = new(gl, shaderHelper, new Rectangle<int>(width - 200, height - 100, 200, 100));
+
+            canvas.Clear(Color.AliceBlue);
+
+            canvas.DrawRectangle(new RectangleF(10, 10, 20, 20), Color.Red);
+
+            canvas.DrawRectangle(new RectangleF(40, 40, 20, 20), Color.Blue);
+
+            DrawCanvas(canvas);
+
+            canvas.Dispose();
+        }
+
+        window.SwapBuffers();
     }
 
-    private static void UpdateCanvas()
+    private static void DrawCanvas(Canvas canvas)
     {
-        uint width = (uint)window.Size.X;
-        uint height = (uint)window.Size.Y;
+        gl.Viewport(0, 0, (uint)width, (uint)height);
 
-        gl.Viewport(0, 0, width, height);
+        gl.EnableVertexAttribArray(positionAttrib);
+        gl.EnableVertexAttribArray(texCoordAttrib);
 
-        // 创建正交投影矩阵
+        gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
+        gl.VertexAttribPointer(positionAttrib, 3, GLEnum.Float, false, 0, null);
+
+        gl.BindBuffer(GLEnum.ArrayBuffer, canvas.TexCoordBuffer);
+        gl.VertexAttribPointer(texCoordAttrib, 2, GLEnum.Float, false, 0, null);
+
+        gl.UseProgram(shaderProgram.Id);
+
         Matrix4x4 projection = Matrix4x4.CreateOrthographicOffCenter(0.0f, width, height, 0.0f, -1.0f, 1.0f);
 
-        // 使用着色器程序
-        shaderProgram.Use();
+        gl.UniformMatrix4(gl.GetUniformLocation(shaderProgram.Id, "projection"), 1, false, (float*)&projection);
 
-        // 将正交投影矩阵传递给着色器
-        gl.UniformMatrix4(shaderProgram.GetUniformLocation("projection"), 1, false, (float*)&projection);
+        gl.ActiveTexture(GLEnum.Texture0);
+        gl.BindTexture(GLEnum.Texture2D, canvas.Framebuffer.Texture);
+        gl.Uniform1(gl.GetUniformLocation(shaderProgram.Id, "tex"), 0);
+
+        gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
+
+        gl.BindTexture(GLEnum.Texture2D, 0);
+
+        gl.DisableVertexAttribArray(positionAttrib);
+        gl.DisableVertexAttribArray(texCoordAttrib);
     }
 }
