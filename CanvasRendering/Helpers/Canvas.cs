@@ -29,7 +29,7 @@ public unsafe class Canvas : IDisposable
 
         if (_rectangle.Size.X * _rectangle.Size.Y > maxTextureSize)
         {
-            _scale = MathF.Sqrt(maxTextureSize / (_rectangle.Size.X * _rectangle.Size.Y));
+            _scale = MathF.Sqrt((float)maxTextureSize / (_rectangle.Size.X * _rectangle.Size.Y));
 
             _actualSize = new Vector2D<uint>(Convert.ToUInt32(_rectangle.Size.X * _scale), Convert.ToUInt32(_rectangle.Size.Y * _scale));
         }
@@ -51,7 +51,7 @@ public unsafe class Canvas : IDisposable
 
         VertexBuffer = _gl.GenBuffer();
         _gl.BindBuffer(GLEnum.ArrayBuffer, VertexBuffer);
-        _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, BufferUsageARB.StaticDraw);
+        _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.StaticDraw);
         _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
 
         float[] texCoords = new float[] {
@@ -63,7 +63,7 @@ public unsafe class Canvas : IDisposable
 
         TexCoordBuffer = _gl.GenBuffer();
         _gl.BindBuffer(GLEnum.ArrayBuffer, TexCoordBuffer);
-        _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(texCoords.Length * sizeof(float)), texCoords, BufferUsageARB.StaticDraw);
+        _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(texCoords.Length * sizeof(float)), texCoords, GLEnum.StaticDraw);
         _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
     }
 
@@ -100,7 +100,7 @@ public unsafe class Canvas : IDisposable
         uint vbo = _gl.GenBuffer();
 
         _gl.BindBuffer(GLEnum.ArrayBuffer, vbo);
-        _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, BufferUsageARB.StaticDraw);
+        _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.StaticDraw);
         _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
 
         _gl.EnableVertexAttribArray(positionAttrib);
@@ -154,7 +154,7 @@ public unsafe class Canvas : IDisposable
         uint vbo = _gl.GenBuffer();
 
         _gl.BindBuffer(GLEnum.ArrayBuffer, vbo);
-        _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, BufferUsageARB.StaticDraw);
+        _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.StaticDraw);
         _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
 
         _gl.EnableVertexAttribArray(positionAttrib);
