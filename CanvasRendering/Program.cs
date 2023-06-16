@@ -63,25 +63,29 @@ internal unsafe class Program
         gl.ClearColor(Color.White);
         gl.Clear(ClearBufferMask.ColorBufferBit);
 
-        Random random = new();
+        float wSum = (float)width / 10;
+        float hSum = (float)height / 10;
 
-        for (int i = 0; i < 1000; i++)
+        for (int i = 0; i < 10; i++)
         {
-            Canvas canvas = new(gl, shaderHelper, new Rectangle<int>(random.Next(width), random.Next(height), random.Next(width), random.Next(height)));
+            for (int j = 0; j < 10; j++)
+            {
+                Canvas canvas = new(gl, shaderHelper, new Rectangle<int>(Convert.ToInt32(wSum * i), Convert.ToInt32(wSum * j), Convert.ToInt32(wSum), Convert.ToInt32(hSum)));
 
-            canvas.Clear(Color.AliceBlue);
+                canvas.Clear(Color.AliceBlue);
 
-            canvas.DrawRectangle(new RectangleF(10, 10, 20, 20), Color.Red);
+                canvas.DrawRectangle(new RectangleF(10, 10, 20, 20), Color.Red);
 
-            canvas.DrawRectangle(new RectangleF(40, 40, 20, 20), Color.Blue);
+                canvas.DrawRectangle(new RectangleF(40, 40, 20, 20), Color.Blue);
 
-            canvas.DrawCircle(new PointF(120, 40), 40, 100, Color.DarkViolet);
+                canvas.DrawCircle(new PointF(120, 40), 40, 100, Color.DarkViolet);
 
-            canvas.Flush();
+                canvas.Flush();
 
-            DrawCanvas(canvas);
+                DrawCanvas(canvas);
 
-            canvas.Dispose();
+                canvas.Dispose();
+            }
         }
 
         gl.Viewport(0, 0, (uint)width, (uint)height);
