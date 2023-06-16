@@ -22,6 +22,7 @@ internal unsafe class Program
         Console.WriteLine(args);
 
         WindowOptions options = WindowOptions.Default;
+        options.ShouldSwapAutomatically = true;
         options.Samples = 2;
         options.VSync = true;
         options.Title = "Texture Rendering";
@@ -64,13 +65,15 @@ internal unsafe class Program
 
         // 左上
         {
-            Canvas canvas = new(gl, shaderHelper, new Rectangle<int>(10, 10, 200, 200));
+            Canvas canvas = new(gl, shaderHelper, new Rectangle<int>(120, 100, 200, 200));
 
             canvas.Clear(Color.AliceBlue);
 
             canvas.DrawRectangle(new RectangleF(10, 10, 20, 20), Color.Red);
 
             canvas.DrawRectangle(new RectangleF(40, 40, 20, 20), Color.Blue);
+
+            canvas.DrawCircle(new PointF(120, 40), 40, 36, Color.DarkViolet);
 
             DrawCanvas(canvas);
 
@@ -92,7 +95,7 @@ internal unsafe class Program
             canvas.Dispose();
         }
 
-        window.SwapBuffers();
+        gl.Viewport(0, 0, (uint)width, (uint)height);
     }
 
     private static void DrawCanvas(Canvas canvas)
