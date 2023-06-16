@@ -63,9 +63,11 @@ internal unsafe class Program
         gl.ClearColor(Color.White);
         gl.Clear(ClearBufferMask.ColorBufferBit);
 
-        // 左上
+        Random random = new();
+
+        for (int i = 0; i < 1000; i++)
         {
-            Canvas canvas = new(gl, shaderHelper, new Rectangle<int>(120, 100, 200, 200));
+            Canvas canvas = new(gl, shaderHelper, new Rectangle<int>(random.Next(width), random.Next(height), random.Next(width), random.Next(height)));
 
             canvas.Clear(Color.AliceBlue);
 
@@ -74,23 +76,6 @@ internal unsafe class Program
             canvas.DrawRectangle(new RectangleF(40, 40, 20, 20), Color.Blue);
 
             canvas.DrawCircle(new PointF(120, 40), 40, 100, Color.DarkViolet);
-
-            canvas.Flush();
-
-            DrawCanvas(canvas);
-
-            canvas.Dispose();
-        }
-
-        // 右下
-        {
-            Canvas canvas = new(gl, shaderHelper, new Rectangle<int>(width - 200, height - 100, 200, 100));
-
-            canvas.Clear(Color.AliceBlue);
-
-            canvas.DrawRectangle(new RectangleF(10, 10, 20, 20), Color.Red);
-
-            canvas.DrawRectangle(new RectangleF(40, 40, 20, 20), Color.Blue);
 
             canvas.Flush();
 
