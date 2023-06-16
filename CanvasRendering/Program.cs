@@ -66,6 +66,8 @@ internal unsafe class Program
         float wSum = (float)width / 10;
         float hSum = (float)height / 10;
 
+        List<Canvas> canvases = new();
+
         for (int i = 0; i < 10; i++)
         {
             for (int j = 0; j < 10; j++)
@@ -82,27 +84,19 @@ internal unsafe class Program
 
                 canvas.Flush();
 
-                DrawCanvas(canvas);
-
-                canvas.Dispose();
+                canvases.Add(canvas);
             }
         }
 
-        gl.Viewport(0, 0, (uint)width, (uint)height);
+        DrawCanvas(canvases);
     }
 
-    private static void DrawCanvas(Canvas canvas)
+    private static void DrawCanvas(List<Canvas> canvases)
     {
         gl.Viewport(0, 0, (uint)width, (uint)height);
 
         gl.EnableVertexAttribArray(positionAttrib);
         gl.EnableVertexAttribArray(texCoordAttrib);
-
-        gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
-        gl.VertexAttribPointer(positionAttrib, 3, GLEnum.Float, false, 0, null);
-
-        gl.BindBuffer(GLEnum.ArrayBuffer, canvas.TexCoordBuffer);
-        gl.VertexAttribPointer(texCoordAttrib, 2, GLEnum.Float, false, 0, null);
 
         gl.UseProgram(shaderProgram.Id);
 
@@ -110,13 +104,24 @@ internal unsafe class Program
 
         gl.UniformMatrix4(gl.GetUniformLocation(shaderProgram.Id, "projection"), 1, false, (float*)&projection);
 
-        gl.ActiveTexture(GLEnum.Texture0);
-        gl.BindTexture(GLEnum.Texture2D, canvas.Framebuffer.Texture);
-        gl.Uniform1(gl.GetUniformLocation(shaderProgram.Id, "tex"), 0);
+        foreach (Canvas canvas in canvases)
+        {
+            gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
+            gl.VertexAttribPointer(positionAttrib, 3, GLEnum.Float, false, 0, null);
 
-        gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
+            gl.BindBuffer(GLEnum.ArrayBuffer, canvas.TexCoordBuffer);
+            gl.VertexAttribPointer(texCoordAttrib, 2, GLEnum.Float, false, 0, null);
 
-        gl.BindTexture(GLEnum.Texture2D, 0);
+            gl.ActiveTexture(GLEnum.Texture0);
+            gl.BindTexture(GLEnum.Texture2D, canvas.Framebuffer.Texture);
+            gl.Uniform1(gl.GetUniformLocation(shaderProgram.Id, "tex"), 0);
+
+            gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
+
+            gl.BindTexture(GLEnum.Texture2D, 0);
+
+            canvas.Dispose();
+        }
 
         gl.DisableVertexAttribArray(positionAttrib);
         gl.DisableVertexAttribArray(texCoordAttrib);
