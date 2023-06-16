@@ -73,7 +73,9 @@ internal unsafe class Program
 
             canvas.DrawRectangle(new RectangleF(40, 40, 20, 20), Color.Blue);
 
-            canvas.DrawCircle(new PointF(120, 40), 40, 36, Color.DarkViolet);
+            canvas.DrawCircle(new PointF(120, 40), 40, 100, Color.DarkViolet);
+
+            canvas.Flush();
 
             DrawCanvas(canvas);
 
@@ -89,6 +91,8 @@ internal unsafe class Program
             canvas.DrawRectangle(new RectangleF(10, 10, 20, 20), Color.Red);
 
             canvas.DrawRectangle(new RectangleF(40, 40, 20, 20), Color.Blue);
+
+            canvas.Flush();
 
             DrawCanvas(canvas);
 

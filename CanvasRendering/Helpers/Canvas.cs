@@ -74,7 +74,7 @@ public unsafe class Canvas : IDisposable
         _gl.Viewport(0, 0, _actualSize.X, _actualSize.Y);
 
         _gl.ClearColor(color);
-        _gl.Clear(ClearBufferMask.ColorBufferBit);
+        _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
         _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
     }
@@ -183,6 +183,17 @@ public unsafe class Canvas : IDisposable
         _gl.DeleteProgram(shaderProgram.Id);
 
         _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+    }
+
+    public void Flush()
+    {
+        _gl.BindFramebuffer(GLEnum.Framebuffer, Framebuffer.Fbo);
+
+        _gl.BindFramebuffer(GLEnum.ReadFramebuffer, Framebuffer.Fbo);
+        _gl.BindFramebuffer(GLEnum.DrawFramebuffer, Framebuffer.TexFbo);
+        _gl.BlitFramebuffer(0, 0, (int)_actualSize.X, (int)_actualSize.Y, 0, 0, (int)_actualSize.X, (int)_actualSize.Y, ClearBufferMask.ColorBufferBit, GLEnum.Nearest);
+
+        _gl.BindFramebuffer(GLEnum.Framebuffer, 0);
     }
 
     public void Dispose()
