@@ -75,7 +75,7 @@ public unsafe class Framebuffer : IDisposable
             _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
             _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
 
-            _gl.TexImage2D(GLEnum.Texture2D, 0, InternalFormat.Rgba8, _size.X, _size.Y, 0, Format, Type, IntPtr.Zero);
+            _gl.TexImage2D(GLEnum.Texture2D, 0, InternalFormat.Rgba8, _size.X, _size.Y, 0, Format, Type, null);
 
             _gl.BindTexture(TextureTarget.Texture2D, 0);
         }

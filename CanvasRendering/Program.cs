@@ -63,35 +63,28 @@ internal unsafe class Program
         gl.ClearColor(Color.White);
         gl.Clear(ClearBufferMask.ColorBufferBit);
 
+        Canvas canvas = new(gl, shaderHelper, new Rectangle<int>(0, 0, width, height));
+        canvas.Clear(Color.White);
+
         float wSum = (float)width / 10;
         float hSum = (float)height / 10;
-
-        List<Canvas> canvases = new();
 
         for (int i = 0; i < 10; i++)
         {
             for (int j = 0; j < 10; j++)
             {
-                Canvas canvas = new(gl, shaderHelper, new Rectangle<int>(Convert.ToInt32(wSum * i), Convert.ToInt32(wSum * j), Convert.ToInt32(wSum), Convert.ToInt32(hSum)));
-
-                canvas.Clear(Color.AliceBlue);
-
-                canvas.DrawRectangle(new RectangleF(10, 10, 20, 20), Color.Red);
-
-                canvas.DrawRectangle(new RectangleF(40, 40, 20, 20), Color.Blue);
-
-                canvas.DrawCircle(new PointF(120, 40), 40, 100, Color.DarkViolet);
-
-                canvas.Flush();
-
-                canvases.Add(canvas);
+                canvas.DrawRectangle(new RectangleF(wSum * i + wSum / 4, hSum * j + hSum / 4, wSum / 2, hSum / 2), Color.Red);
             }
         }
 
-        DrawCanvas(canvases);
+        canvas.Flush();
+
+        DrawCanvas(canvas);
+
+        canvas.Dispose();
     }
 
-    private static void DrawCanvas(List<Canvas> canvases)
+    private static void DrawCanvas(Canvas canvas)
     {
         gl.Viewport(0, 0, (uint)width, (uint)height);
 
@@ -104,24 +97,19 @@ internal unsafe class Program
 
         gl.UniformMatrix4(gl.GetUniformLocation(shaderProgram.Id, "projection"), 1, false, (float*)&projection);
 
-        foreach (Canvas canvas in canvases)
-        {
-            gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
-            gl.VertexAttribPointer(positionAttrib, 3, GLEnum.Float, false, 0, null);
+        gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
+        gl.VertexAttribPointer(positionAttrib, 3, GLEnum.Float, false, 0, null);
 
-            gl.BindBuffer(GLEnum.ArrayBuffer, canvas.TexCoordBuffer);
-            gl.VertexAttribPointer(texCoordAttrib, 2, GLEnum.Float, false, 0, null);
+        gl.BindBuffer(GLEnum.ArrayBuffer, canvas.TexCoordBuffer);
+        gl.VertexAttribPointer(texCoordAttrib, 2, GLEnum.Float, false, 0, null);
 
-            gl.ActiveTexture(GLEnum.Texture0);
-            gl.BindTexture(GLEnum.Texture2D, canvas.Framebuffer.Texture);
-            gl.Uniform1(gl.GetUniformLocation(shaderProgram.Id, "tex"), 0);
+        gl.ActiveTexture(GLEnum.Texture0);
+        gl.BindTexture(GLEnum.Texture2D, canvas.Framebuffer.Texture);
+        gl.Uniform1(gl.GetUniformLocation(shaderProgram.Id, "tex"), 0);
 
-            gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
+        gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
 
-            gl.BindTexture(GLEnum.Texture2D, 0);
-
-            canvas.Dispose();
-        }
+        gl.BindTexture(GLEnum.Texture2D, 0);
 
         gl.DisableVertexAttribArray(positionAttrib);
         gl.DisableVertexAttribArray(texCoordAttrib);

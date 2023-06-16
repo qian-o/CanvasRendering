@@ -27,9 +27,10 @@ public unsafe class Canvas : IDisposable
 
         _gl.GetInteger(GLEnum.MaxTextureSize, out int maxTextureSize);
 
-        if (_rectangle.Size.X * _rectangle.Size.Y > maxTextureSize)
+        float maxSize = MathF.Pow(maxTextureSize, 2);
+        if (_rectangle.Size.X * _rectangle.Size.Y > maxSize)
         {
-            _scale = MathF.Sqrt((float)maxTextureSize / (_rectangle.Size.X * _rectangle.Size.Y));
+            _scale = MathF.Sqrt(maxSize / (_rectangle.Size.X * _rectangle.Size.Y));
 
             _actualSize = new Vector2D<uint>(Convert.ToUInt32(_rectangle.Size.X * _scale), Convert.ToUInt32(_rectangle.Size.Y * _scale));
         }
@@ -91,10 +92,10 @@ public unsafe class Canvas : IDisposable
         uint positionAttrib = (uint)_gl.GetAttribLocation(shaderProgram.Id, "position");
 
         float[] vertices = new float[] {
-            rectangle.Left, rectangle.Top, 0.0f,
-            rectangle.Left, rectangle.Bottom, 0.0f,
-            rectangle.Right, rectangle.Top, 0.0f,
-            rectangle.Right, rectangle.Bottom, 0.0f
+            rectangle.Left *_scale, rectangle.Top *_scale, 0.0f,
+            rectangle.Left *_scale, rectangle.Bottom *_scale, 0.0f,
+            rectangle.Right *_scale, rectangle.Top *_scale, 0.0f,
+            rectangle.Right *_scale, rectangle.Bottom *_scale, 0.0f
         };
 
         uint vbo = _gl.GenBuffer();
