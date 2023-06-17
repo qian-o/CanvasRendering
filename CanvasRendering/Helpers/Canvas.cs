@@ -218,8 +218,8 @@ public unsafe class Canvas : IDisposable
 
         program.Enable();
 
-        Matrix4x4 projection = ProjectionMatrix;
-        _gl.UniformMatrix4(program.GetUniformLocation("projection"), 1, false, (float*)&projection);
+        Matrix4x4 projectionMatrix = ProjectionMatrix;
+        _gl.UniformMatrix4(program.GetUniformLocation("projection"), 1, false, (float*)&projectionMatrix);
 
         action?.Invoke();
 
