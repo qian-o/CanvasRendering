@@ -10,19 +10,19 @@ public unsafe class Framebuffer : IDisposable
     private readonly GL _gl;
     private readonly Vector2D<uint> _size;
 
-    public PixelFormat Format { get; }
+    public GLEnum Format { get; }
 
-    public PixelType Type { get; }
+    public GLEnum Type { get; }
 
-    public uint Fbo { get; }
+    public uint DrawFbo { get; }
 
-    public uint Color { get; }
+    public uint DrawTexture { get; }
 
-    public uint Depth { get; }
+    public uint MultisampleFbo { get; }
 
-    public uint TexFbo { get; }
+    public uint MultisampleTexture { get; }
 
-    public uint Texture { get; }
+    public uint MultisampleRbo { get; }
 
     public Framebuffer(GL gl, Vector2D<uint> size)
     {
@@ -32,58 +32,62 @@ public unsafe class Framebuffer : IDisposable
         _gl.GetInteger(GLEnum.ImplementationColorReadFormat, out int format);
         _gl.GetInteger(GLEnum.ImplementationColorReadType, out int type);
 
-        Format = (PixelFormat)format;
-        Type = (PixelType)type;
+        Format = (GLEnum)format;
+        Type = (GLEnum)type;
 
-        Fbo = _gl.GenFramebuffer();
-        Color = _gl.GenRenderbuffer();
-        Depth = _gl.GenRenderbuffer();
-        TexFbo = _gl.GenFramebuffer();
-        Texture = _gl.GenTexture();
+        MultisampleFbo = _gl.GenFramebuffer();
+        MultisampleTexture = _gl.GenTexture();
+        MultisampleRbo = _gl.GenRenderbuffer();
+        DrawFbo = _gl.GenFramebuffer();
+        DrawTexture = _gl.GenTexture();
 
-        _gl.BindFramebuffer(FramebufferTarget.Framebuffer, Fbo);
-
-        // Color 缓冲区
+        // 绘图纹理
         {
-            _gl.BindRenderbuffer(RenderbufferTarget.Renderbuffer, Color);
-            _gl.RenderbufferStorageMultisample(GLEnum.Renderbuffer, MaxSamples, GLEnum.Rgba8, _size.X, _size.Y);
+            _gl.BindTexture(GLEnum.Texture2D, DrawTexture);
 
-            _gl.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, RenderbufferTarget.Renderbuffer, Color);
+            _gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureMinFilter, (int)GLEnum.Linear);
+            _gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureMagFilter, (int)GLEnum.Linear);
+            _gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureWrapS, (int)GLEnum.Repeat);
+            _gl.TexParameter(GLEnum.Texture2D, GLEnum.TextureWrapT, (int)GLEnum.Repeat);
 
-            _gl.BindRenderbuffer(RenderbufferTarget.Renderbuffer, 0);
+            _gl.TexImage2D(GLEnum.Texture2D, 0, (int)GLEnum.Rgba8, _size.X, _size.Y, 0, Format, Type, null);
+
+            _gl.BindTexture(GLEnum.Texture2D, 0);
+
+            _gl.BindFramebuffer(GLEnum.Framebuffer, DrawFbo);
+
+            _gl.FramebufferTexture2D(GLEnum.Framebuffer, GLEnum.ColorAttachment0, GLEnum.Texture2D, DrawTexture, 0);
+
+            _gl.BindFramebuffer(GLEnum.Framebuffer, 0);
         }
 
-        // Depth、Stencil 缓冲区
+        // 多重采样纹理、缓冲区
         {
-            _gl.BindRenderbuffer(RenderbufferTarget.Renderbuffer, Depth);
+            _gl.BindFramebuffer(GLEnum.Framebuffer, MultisampleFbo);
+
+            _gl.BindTexture(GLEnum.Texture2DMultisample, MultisampleTexture);
+
+            _gl.TexStorage2DMultisample(GLEnum.Texture2DMultisample, MaxSamples, GLEnum.Rgba8, _size.X, _size.Y, true);
+
+            _gl.TexParameter(GLEnum.Texture2DMultisample, GLEnum.TextureMinFilter, (int)GLEnum.Linear);
+            _gl.TexParameter(GLEnum.Texture2DMultisample, GLEnum.TextureMagFilter, (int)GLEnum.Linear);
+            _gl.TexParameter(GLEnum.Texture2DMultisample, GLEnum.TextureWrapS, (int)GLEnum.Repeat);
+            _gl.TexParameter(GLEnum.Texture2DMultisample, GLEnum.TextureWrapT, (int)GLEnum.Repeat);
+
+            _gl.BindTexture(GLEnum.Texture2DMultisample, 0);
+
+            _gl.FramebufferTexture2D(GLEnum.Framebuffer, GLEnum.ColorAttachment0, GLEnum.Texture2DMultisample, MultisampleTexture, 0);
+
+            _gl.BindRenderbuffer(GLEnum.Renderbuffer, MultisampleRbo);
+
             _gl.RenderbufferStorageMultisample(GLEnum.Renderbuffer, MaxSamples, GLEnum.Depth24Stencil8, _size.X, _size.Y);
 
-            _gl.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment, RenderbufferTarget.Renderbuffer, Depth);
-            _gl.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.StencilAttachment, RenderbufferTarget.Renderbuffer, Depth);
+            _gl.BindRenderbuffer(GLEnum.Renderbuffer, 0);
 
-            _gl.BindRenderbuffer(RenderbufferTarget.Renderbuffer, 0);
-        }
+            _gl.FramebufferRenderbuffer(GLEnum.Framebuffer, GLEnum.DepthAttachment, GLEnum.Renderbuffer, MultisampleRbo);
+            _gl.FramebufferRenderbuffer(GLEnum.Framebuffer, GLEnum.StencilAttachment, GLEnum.Renderbuffer, MultisampleRbo);
 
-        _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
-
-        // 设置纹理
-        {
-            _gl.BindTexture(GLEnum.Texture2D, Texture);
-
-            _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMagFilter.Linear);
-            _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
-            _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.Repeat);
-            _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.Repeat);
-
-            _gl.TexImage2D(GLEnum.Texture2D, 0, InternalFormat.Rgba8, _size.X, _size.Y, 0, Format, Type, null);
-
-            _gl.BindTexture(TextureTarget.Texture2D, 0);
-
-            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, TexFbo);
-
-            _gl.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, Texture, 0);
-
-            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            _gl.BindFramebuffer(GLEnum.Framebuffer, 0);
         }
     }
 
@@ -93,18 +97,18 @@ public unsafe class Framebuffer : IDisposable
 
         fixed (void* data = bytes)
         {
-            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, Fbo);
-            _gl.ReadnPixels(0, 0, _size.X, _size.Y, (GLEnum)Format, (GLEnum)Type, (uint)bytes.Length, data);
+            _gl.BindFramebuffer(GLEnum.Framebuffer, MultisampleFbo);
+            _gl.ReadnPixels(0, 0, _size.X, _size.Y, Format, Type, (uint)bytes.Length, data);
         }
     }
 
     public void Dispose()
     {
-        _gl.DeleteFramebuffer(Fbo);
-        _gl.DeleteRenderbuffer(Color);
-        _gl.DeleteRenderbuffer(Depth);
-        _gl.DeleteFramebuffer(TexFbo);
-        _gl.DeleteTexture(Texture);
+        _gl.DeleteFramebuffer(DrawFbo);
+        _gl.DeleteTexture(DrawTexture);
+        _gl.DeleteFramebuffer(MultisampleFbo);
+        _gl.DeleteTexture(MultisampleTexture);
+        _gl.DeleteRenderbuffer(MultisampleRbo);
 
         GC.SuppressFinalize(this);
     }

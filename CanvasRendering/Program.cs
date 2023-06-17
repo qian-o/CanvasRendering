@@ -2,6 +2,7 @@
 using Silk.NET.Maths;
 using Silk.NET.OpenGLES;
 using Silk.NET.Windowing;
+using System.Diagnostics;
 using System.Drawing;
 using System.Numerics;
 
@@ -17,6 +18,7 @@ internal unsafe class Program
     private static uint texCoordAttrib;
     private static int width = 800, height = 600;
     private static Canvas canvas;
+    private static Stopwatch stopwatch = Stopwatch.StartNew();
 
     static void Main(string[] args)
     {
@@ -70,16 +72,20 @@ internal unsafe class Program
 
         canvas.Clear(Color.White);
 
-        float wSum = (float)width / 1;
-        float hSum = (float)height / 1;
+        float wSum = (float)width / 20;
+        float hSum = (float)height / 20;
 
-        for (int i = 0; i < 1; i++)
+        for (int i = 0; i < 20; i++)
         {
-            for (int j = 0; j < 1; j++)
+            for (int j = 0; j < 20; j++)
             {
-                canvas.DrawRectangle(new RectangleF(wSum * i + wSum / 4, hSum * j + hSum / 4, wSum / 2, hSum / 2), Color.Red);
+                float hue = (float)stopwatch.Elapsed.TotalSeconds * 0.15f % 1;
 
-                canvas.DrawCircle(new PointF(wSum * i + wSum / 2, hSum * j + hSum / 2), 800, Color.Blue);
+                canvas.DrawRectangle(new RectangleF(wSum * i + wSum / 4, hSum * j + hSum / 4, wSum / 2, hSum / 2), new Vector4(1.0f * hue, 1.0f * 0.75f, 1.0f * 0.75f, 1.0f).ToColor());
+
+                hue = (float)stopwatch.Elapsed.TotalSeconds * 0.50f % 1;
+
+                canvas.DrawCircle(new PointF(wSum * i + wSum / 2, hSum * j + hSum / 2), 10, new Vector4(1.0f * hue, 1.0f * 0.75f, 1.0f * 0.75f, 1.0f).ToColor());
             }
         }
 
@@ -108,7 +114,7 @@ internal unsafe class Program
         gl.VertexAttribPointer(texCoordAttrib, 2, GLEnum.Float, false, 0, null);
 
         gl.ActiveTexture(GLEnum.Texture0);
-        gl.BindTexture(GLEnum.Texture2D, canvas.Framebuffer.Texture);
+        gl.BindTexture(GLEnum.Texture2D, canvas.Framebuffer.DrawTexture);
         gl.Uniform1(shaderProgram.GetUniformLocation("tex"), 0);
 
         gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);

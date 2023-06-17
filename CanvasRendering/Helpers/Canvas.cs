@@ -7,7 +7,7 @@ namespace CanvasRendering.Helpers;
 
 public unsafe class Canvas : IDisposable
 {
-    private readonly uint CirclePoints = 36;
+    private readonly uint CirclePoints = 120;
 
     private readonly GL _gl;
     private readonly ShaderHelper _shaderHelper;
@@ -15,6 +15,8 @@ public unsafe class Canvas : IDisposable
     public Rectangle<int> Rectangle { get; private set; }
 
     public Vector2D<uint> Size { get; private set; }
+
+    public Matrix4x4 ProjectionMatrix { get; private set; }
 
     public Framebuffer Framebuffer { get; private set; }
 
@@ -100,6 +102,8 @@ public unsafe class Canvas : IDisposable
 
         Size = new Vector2D<uint>((uint)Rectangle.Size.X, (uint)Rectangle.Size.Y);
 
+        ProjectionMatrix = Matrix4x4.CreateOrthographicOffCenter(0.0f, Size.X, 0.0f, Size.Y, -1.0f, 1.0f);
+
         Framebuffer?.Dispose();
         Framebuffer = new Framebuffer(_gl, Size);
 
@@ -117,14 +121,14 @@ public unsafe class Canvas : IDisposable
 
     public void Clear(Color color)
     {
-        _gl.BindFramebuffer(FramebufferTarget.Framebuffer, Framebuffer.Fbo);
+        _gl.BindFramebuffer(GLEnum.Framebuffer, Framebuffer.MultisampleFbo);
 
         _gl.Viewport(0, 0, Size.X, Size.Y);
 
         _gl.ClearColor(color);
         _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
-        _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+        _gl.BindFramebuffer(GLEnum.Framebuffer, 0);
     }
 
     public void DrawRectangle(RectangleF rectangle, Color color)
@@ -178,10 +182,10 @@ public unsafe class Canvas : IDisposable
 
     public void Flush()
     {
-        _gl.BindFramebuffer(GLEnum.Framebuffer, Framebuffer.Fbo);
+        _gl.BindFramebuffer(GLEnum.Framebuffer, Framebuffer.MultisampleFbo);
 
-        _gl.BindFramebuffer(GLEnum.ReadFramebuffer, Framebuffer.Fbo);
-        _gl.BindFramebuffer(GLEnum.DrawFramebuffer, Framebuffer.TexFbo);
+        _gl.BindFramebuffer(GLEnum.ReadFramebuffer, Framebuffer.MultisampleFbo);
+        _gl.BindFramebuffer(GLEnum.DrawFramebuffer, Framebuffer.DrawFbo);
         _gl.BlitFramebuffer(0, 0, (int)Size.X, (int)Size.Y, 0, 0, (int)Size.X, (int)Size.Y, ClearBufferMask.ColorBufferBit, GLEnum.Nearest);
 
         _gl.BindFramebuffer(GLEnum.Framebuffer, 0);
@@ -206,7 +210,7 @@ public unsafe class Canvas : IDisposable
     {
         uint positionAttrib = (uint)program.GetAttribLocation("position");
 
-        _gl.BindFramebuffer(FramebufferTarget.Framebuffer, Framebuffer.Fbo);
+        _gl.BindFramebuffer(GLEnum.Framebuffer, Framebuffer.MultisampleFbo);
 
         _gl.Viewport(0, 0, Size.X, Size.Y);
 
@@ -214,7 +218,7 @@ public unsafe class Canvas : IDisposable
 
         program.Enable();
 
-        Matrix4x4 projection = Matrix4x4.CreateOrthographicOffCenter(0.0f, Size.X, 0.0f, Size.Y, -1.0f, 1.0f);
+        Matrix4x4 projection = ProjectionMatrix;
         _gl.UniformMatrix4(program.GetUniformLocation("projection"), 1, false, (float*)&projection);
 
         action?.Invoke();
