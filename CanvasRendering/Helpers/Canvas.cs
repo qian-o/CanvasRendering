@@ -7,6 +7,8 @@ namespace CanvasRendering.Helpers;
 
 public unsafe class Canvas : IDisposable
 {
+    private readonly uint CirclePoints = 36;
+
     private readonly GL _gl;
     private readonly ShaderHelper _shaderHelper;
 
@@ -77,7 +79,7 @@ public unsafe class Canvas : IDisposable
 
         // 圆形坐标系
         {
-            float[] circleVertices = new float[360];
+            float[] circleVertices = new float[CirclePoints * 3];
 
             CircleBuffer = _gl.GenBuffer();
             _gl.BindBuffer(GLEnum.ArrayBuffer, CircleBuffer);
@@ -127,86 +129,51 @@ public unsafe class Canvas : IDisposable
 
     public void DrawRectangle(RectangleF rectangle, Color color)
     {
-        _gl.BindFramebuffer(FramebufferTarget.Framebuffer, Framebuffer.Fbo);
+        Draw(RectangleProgram, () =>
+        {
+            _gl.Uniform4(RectangleProgram.GetUniformLocation("solidColor"), color.ToVector4());
 
-        _gl.Viewport(0, 0, Size.X, Size.Y);
+            float[] vertices = new float[] {
+                rectangle.Left, rectangle.Top, 0.0f,
+                rectangle.Left, rectangle.Bottom, 0.0f,
+                rectangle.Right, rectangle.Top, 0.0f,
+                rectangle.Right, rectangle.Bottom, 0.0f
+            };
 
-        uint positionAttrib = (uint)RectangleProgram.GetAttribLocation("position");
+            _gl.BindBuffer(GLEnum.ArrayBuffer, RectangleBuffer);
 
-        float[] vertices = new float[] {
-            rectangle.Left, rectangle.Top, 0.0f,
-            rectangle.Left, rectangle.Bottom, 0.0f,
-            rectangle.Right, rectangle.Top, 0.0f,
-            rectangle.Right, rectangle.Bottom, 0.0f
-        };
+            _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(vertices.Length * sizeof(float)), vertices);
+            _gl.VertexAttribPointer((uint)RectangleProgram.GetAttribLocation("position"), 3, GLEnum.Float, false, 0, null);
 
-        _gl.BindBuffer(GLEnum.ArrayBuffer, RectangleBuffer);
-        _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(vertices.Length * sizeof(float)), vertices);
+            _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
 
-        _gl.EnableVertexAttribArray(positionAttrib);
-
-        _gl.VertexAttribPointer(positionAttrib, 3, GLEnum.Float, false, 0, null);
-
-        RectangleProgram.Enable();
-
-        Matrix4x4 projection = Matrix4x4.CreateOrthographicOffCenter(0.0f, Size.X, 0.0f, Size.Y, -1.0f, 1.0f);
-
-        _gl.UniformMatrix4(RectangleProgram.GetUniformLocation("projection"), 1, false, (float*)&projection);
-
-        _gl.Uniform4(RectangleProgram.GetUniformLocation("solidColor"), color.ToVector4());
-
-        _gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
-
-        RectangleProgram.Disable();
-
-        _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-
-        _gl.DisableVertexAttribArray(positionAttrib);
-
-        _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            _gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
+        });
     }
 
     public void DrawCircle(PointF origin, float radius, Color color)
     {
-        _gl.BindFramebuffer(FramebufferTarget.Framebuffer, Framebuffer.Fbo);
-
-        _gl.Viewport(0, 0, Size.X, Size.Y);
-
-        uint positionAttrib = (uint)CircleProgram.GetAttribLocation("position");
-
-        float[] vertices = new float[360];
-
-        for (int i = 0; i < 120; i++)
+        Draw(CircleProgram, () =>
         {
-            vertices[i * 3] = origin.X + radius * MathF.Cos(2 * MathF.PI * i / 120);
-            vertices[i * 3 + 1] = origin.Y + radius * MathF.Sin(2 * MathF.PI * i / 120);
-            vertices[i * 3 + 2] = 0.0f;
-        }
+            _gl.Uniform4(CircleProgram.GetUniformLocation("solidColor"), color.ToVector4());
 
-        _gl.BindBuffer(GLEnum.ArrayBuffer, CircleBuffer);
-        _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(vertices.Length * sizeof(float)), vertices);
+            float[] vertices = new float[CirclePoints * 3];
+            for (int i = 0; i < CirclePoints; i++)
+            {
+                vertices[i * 3] = origin.X + radius * MathF.Cos(2 * MathF.PI * i / CirclePoints);
+                vertices[i * 3 + 1] = origin.Y + radius * MathF.Sin(2 * MathF.PI * i / CirclePoints);
+                vertices[i * 3 + 2] = 0.0f;
+            }
 
-        _gl.EnableVertexAttribArray(positionAttrib);
+            _gl.BindBuffer(GLEnum.ArrayBuffer, CircleBuffer);
 
-        _gl.VertexAttribPointer(positionAttrib, 3, GLEnum.Float, false, 0, null);
+            _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(vertices.Length * sizeof(float)), vertices);
+            _gl.VertexAttribPointer((uint)CircleProgram.GetAttribLocation("position"), 3, GLEnum.Float, false, 0, null);
 
-        CircleProgram.Enable();
+            _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
 
-        Matrix4x4 projection = Matrix4x4.CreateOrthographicOffCenter(0.0f, Size.X, 0.0f, Size.Y, -1.0f, 1.0f);
-
-        _gl.UniformMatrix4(CircleProgram.GetUniformLocation("projection"), 1, false, (float*)&projection);
-
-        _gl.Uniform4(CircleProgram.GetUniformLocation("solidColor"), color.ToVector4());
-
-        _gl.DrawArrays(GLEnum.TriangleFan, 0, 120);
-
-        CircleProgram.Disable();
-
-        _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-
-        _gl.DisableVertexAttribArray(positionAttrib);
-
-        _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            _gl.DrawArrays(GLEnum.TriangleFan, 0, CirclePoints);
+        });
     }
 
     public void Flush()
@@ -233,5 +200,29 @@ public unsafe class Canvas : IDisposable
         CircleProgram.Dispose();
 
         GC.SuppressFinalize(this);
+    }
+
+    private void Draw(ShaderProgram program, Action action)
+    {
+        uint positionAttrib = (uint)program.GetAttribLocation("position");
+
+        _gl.BindFramebuffer(FramebufferTarget.Framebuffer, Framebuffer.Fbo);
+
+        _gl.Viewport(0, 0, Size.X, Size.Y);
+
+        _gl.EnableVertexAttribArray(positionAttrib);
+
+        program.Enable();
+
+        Matrix4x4 projection = Matrix4x4.CreateOrthographicOffCenter(0.0f, Size.X, 0.0f, Size.Y, -1.0f, 1.0f);
+        _gl.UniformMatrix4(program.GetUniformLocation("projection"), 1, false, (float*)&projection);
+
+        action?.Invoke();
+
+        program.Disable();
+
+        _gl.DisableVertexAttribArray(positionAttrib);
+
+        _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
     }
 }

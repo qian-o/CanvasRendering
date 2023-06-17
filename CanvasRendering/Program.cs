@@ -70,16 +70,16 @@ internal unsafe class Program
 
         canvas.Clear(Color.White);
 
-        float wSum = (float)width / 10;
-        float hSum = (float)height / 10;
+        float wSum = (float)width / 1;
+        float hSum = (float)height / 1;
 
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i < 1; i++)
         {
-            for (int j = 0; j < 10; j++)
+            for (int j = 0; j < 1; j++)
             {
                 canvas.DrawRectangle(new RectangleF(wSum * i + wSum / 4, hSum * j + hSum / 4, wSum / 2, hSum / 2), Color.Red);
 
-                canvas.DrawCircle(new PointF(wSum * i + wSum / 2, hSum * j + hSum / 2), 40, Color.Blue);
+                canvas.DrawCircle(new PointF(wSum * i + wSum / 2, hSum * j + hSum / 2), 800, Color.Blue);
             }
         }
 
