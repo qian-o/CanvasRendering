@@ -16,18 +16,19 @@ internal unsafe class Program
     private static uint positionAttrib;
     private static uint texCoordAttrib;
     private static int width = 800, height = 600;
+    private static Canvas canvas;
 
     static void Main(string[] args)
     {
         Console.WriteLine(args);
 
         WindowOptions options = WindowOptions.Default;
-        options.ShouldSwapAutomatically = true;
-        options.Samples = 2;
-        options.VSync = true;
         options.Title = "Texture Rendering";
         options.Size = new Vector2D<int>(width, height);
         options.API = new GraphicsAPI(ContextAPI.OpenGLES, new APIVersion(3, 2));
+        options.ShouldSwapAutomatically = true;
+        options.Samples = 2;
+        options.VSync = true;
         window = Window.Create(options);
 
         window.Load += Window_Load;
@@ -46,14 +47,18 @@ internal unsafe class Program
         shaderProgram = new ShaderProgram(gl);
         shaderProgram.Attach(shaderHelper.GetShader("defaultVertex.vert"), shaderHelper.GetShader("texture.frag"));
 
-        positionAttrib = (uint)gl.GetAttribLocation(shaderProgram.Id, "position");
-        texCoordAttrib = (uint)gl.GetAttribLocation(shaderProgram.Id, "texCoord");
+        positionAttrib = (uint)shaderProgram.GetAttribLocation("position");
+        texCoordAttrib = (uint)shaderProgram.GetAttribLocation("texCoord");
+
+        canvas = new(gl, shaderHelper, new Rectangle<int>(0, 0, width, height));
     }
 
     private static void Window_Resize(Vector2D<int> obj)
     {
         width = obj.X;
         height = obj.Y;
+
+        canvas.Resize(new Rectangle<int>(0, 0, width, height));
 
         window.DoRender();
     }
@@ -63,7 +68,6 @@ internal unsafe class Program
         gl.ClearColor(Color.White);
         gl.Clear(ClearBufferMask.ColorBufferBit);
 
-        Canvas canvas = new(gl, shaderHelper, new Rectangle<int>(0, 0, width, height));
         canvas.Clear(Color.White);
 
         float wSum = (float)width / 10;
@@ -74,14 +78,14 @@ internal unsafe class Program
             for (int j = 0; j < 10; j++)
             {
                 canvas.DrawRectangle(new RectangleF(wSum * i + wSum / 4, hSum * j + hSum / 4, wSum / 2, hSum / 2), Color.Red);
+
+                canvas.DrawCircle(new PointF(wSum * i + wSum / 2, hSum * j + hSum / 2), 40, Color.Blue);
             }
         }
 
         canvas.Flush();
 
         DrawCanvas(canvas);
-
-        canvas.Dispose();
     }
 
     private static void DrawCanvas(Canvas canvas)
@@ -91,11 +95,11 @@ internal unsafe class Program
         gl.EnableVertexAttribArray(positionAttrib);
         gl.EnableVertexAttribArray(texCoordAttrib);
 
-        gl.UseProgram(shaderProgram.Id);
+        shaderProgram.Enable();
 
         Matrix4x4 projection = Matrix4x4.CreateOrthographicOffCenter(0.0f, width, height, 0.0f, -1.0f, 1.0f);
 
-        gl.UniformMatrix4(gl.GetUniformLocation(shaderProgram.Id, "projection"), 1, false, (float*)&projection);
+        gl.UniformMatrix4(shaderProgram.GetUniformLocation("projection"), 1, false, (float*)&projection);
 
         gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
         gl.VertexAttribPointer(positionAttrib, 3, GLEnum.Float, false, 0, null);
@@ -105,11 +109,13 @@ internal unsafe class Program
 
         gl.ActiveTexture(GLEnum.Texture0);
         gl.BindTexture(GLEnum.Texture2D, canvas.Framebuffer.Texture);
-        gl.Uniform1(gl.GetUniformLocation(shaderProgram.Id, "tex"), 0);
+        gl.Uniform1(shaderProgram.GetUniformLocation("tex"), 0);
 
         gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
 
         gl.BindTexture(GLEnum.Texture2D, 0);
+
+        shaderProgram.Disable();
 
         gl.DisableVertexAttribArray(positionAttrib);
         gl.DisableVertexAttribArray(texCoordAttrib);

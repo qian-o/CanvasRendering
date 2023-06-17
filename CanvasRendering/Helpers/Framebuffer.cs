@@ -78,10 +78,7 @@ public unsafe class Framebuffer : IDisposable
             _gl.TexImage2D(GLEnum.Texture2D, 0, InternalFormat.Rgba8, _size.X, _size.Y, 0, Format, Type, null);
 
             _gl.BindTexture(TextureTarget.Texture2D, 0);
-        }
 
-        // 将纹理绑定到 TexFbo
-        {
             _gl.BindFramebuffer(FramebufferTarget.Framebuffer, TexFbo);
 
             _gl.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0, TextureTarget.Texture2D, Texture, 0);

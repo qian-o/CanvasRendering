@@ -2,9 +2,11 @@
 
 namespace CanvasRendering.Helpers;
 
-public class ShaderProgram
+public class ShaderProgram : IDisposable
 {
     private readonly GL _gl;
+    private readonly Dictionary<string, int> _attribLocations;
+    private readonly Dictionary<string, int> _uniformLocations;
 
     public uint Id { get; }
 
@@ -15,6 +17,8 @@ public class ShaderProgram
     public ShaderProgram(GL gl)
     {
         _gl = gl;
+        _attribLocations = new Dictionary<string, int>();
+        _uniformLocations = new Dictionary<string, int>();
 
         Id = _gl.CreateProgram();
     }
@@ -53,5 +57,48 @@ public class ShaderProgram
         {
             throw new Exception($"Program:{Id}, Error:{error}");
         }
+    }
+
+    public void Enable()
+    {
+        _gl.UseProgram(Id);
+    }
+
+    public void Disable()
+    {
+        _gl.UseProgram(0);
+    }
+
+    public int GetAttribLocation(string name)
+    {
+        if (!_attribLocations.TryGetValue(name, out int value))
+        {
+            value = _gl.GetAttribLocation(Id, name);
+
+            _attribLocations[name] = value;
+        }
+
+        return value;
+    }
+
+    public int GetUniformLocation(string name)
+    {
+        if (!_uniformLocations.TryGetValue(name, out int value))
+        {
+            value = _gl.GetUniformLocation(Id, name);
+
+            _uniformLocations[name] = value;
+        }
+
+        return value;
+    }
+
+    public void Dispose()
+    {
+        _gl.DeleteProgram(Id);
+        _attribLocations.Clear();
+        _uniformLocations.Clear();
+
+        GC.SuppressFinalize(this);
     }
 }
