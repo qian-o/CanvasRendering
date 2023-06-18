@@ -28,9 +28,7 @@ public unsafe class Canvas : IDisposable
 
     public uint CircleBuffer { get; private set; }
 
-    public ShaderProgram RectangleProgram { get; private set; }
-
-    public ShaderProgram CircleProgram { get; private set; }
+    public ShaderProgram SolidColorProgram { get; private set; }
 
     public Canvas(GL gl, ShaderHelper shaderHelper, Rectangle<int> rectangle)
     {
@@ -89,11 +87,8 @@ public unsafe class Canvas : IDisposable
             _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
         }
 
-        RectangleProgram = new ShaderProgram(_gl);
-        RectangleProgram.Attach(_shaderHelper.GetShader("defaultVertex.vert"), _shaderHelper.GetShader("solidColor.frag"));
-
-        CircleProgram = new ShaderProgram(_gl);
-        CircleProgram.Attach(_shaderHelper.GetShader("defaultVertex.vert"), _shaderHelper.GetShader("solidColor.frag"));
+        SolidColorProgram = new ShaderProgram(_gl);
+        SolidColorProgram.Attach(_shaderHelper.GetShader("defaultVertex.vert"), _shaderHelper.GetShader("solidColor.frag"));
     }
 
     public void Resize(Rectangle<int> rectangle)
@@ -133,9 +128,9 @@ public unsafe class Canvas : IDisposable
 
     public void DrawRectangle(RectangleF rectangle, Color color)
     {
-        Draw(RectangleProgram, () =>
+        Draw(SolidColorProgram, () =>
         {
-            _gl.Uniform4(RectangleProgram.GetUniformLocation("solidColor"), color.ToVector4());
+            _gl.Uniform4(SolidColorProgram.GetUniformLocation("solidColor"), color.ToVector4());
 
             float[] vertices = new float[] {
                 rectangle.Left, rectangle.Top, 0.0f,
@@ -147,7 +142,7 @@ public unsafe class Canvas : IDisposable
             _gl.BindBuffer(GLEnum.ArrayBuffer, RectangleBuffer);
 
             _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(vertices.Length * sizeof(float)), vertices);
-            _gl.VertexAttribPointer((uint)RectangleProgram.GetAttribLocation("position"), 3, GLEnum.Float, false, 0, null);
+            _gl.VertexAttribPointer((uint)SolidColorProgram.GetAttribLocation("position"), 3, GLEnum.Float, false, 0, null);
 
             _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
 
@@ -157,9 +152,9 @@ public unsafe class Canvas : IDisposable
 
     public void DrawCircle(PointF origin, float radius, Color color)
     {
-        Draw(CircleProgram, () =>
+        Draw(SolidColorProgram, () =>
         {
-            _gl.Uniform4(CircleProgram.GetUniformLocation("solidColor"), color.ToVector4());
+            _gl.Uniform4(SolidColorProgram.GetUniformLocation("solidColor"), color.ToVector4());
 
             float[] vertices = new float[CirclePoints * 3];
             for (int i = 0; i < CirclePoints; i++)
@@ -172,7 +167,7 @@ public unsafe class Canvas : IDisposable
             _gl.BindBuffer(GLEnum.ArrayBuffer, CircleBuffer);
 
             _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(vertices.Length * sizeof(float)), vertices);
-            _gl.VertexAttribPointer((uint)CircleProgram.GetAttribLocation("position"), 3, GLEnum.Float, false, 0, null);
+            _gl.VertexAttribPointer((uint)SolidColorProgram.GetAttribLocation("position"), 3, GLEnum.Float, false, 0, null);
 
             _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
 
@@ -200,8 +195,7 @@ public unsafe class Canvas : IDisposable
         _gl.DeleteBuffer(RectangleBuffer);
         _gl.DeleteBuffer(CircleBuffer);
 
-        RectangleProgram.Dispose();
-        CircleProgram.Dispose();
+        SolidColorProgram.Dispose();
 
         GC.SuppressFinalize(this);
     }
