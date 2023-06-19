@@ -28,6 +28,8 @@ public unsafe class Canvas : IDisposable
 
     public uint CircleBuffer { get; private set; }
 
+    public uint LineBuffer { get; private set; }
+
     public ShaderProgram SolidColorProgram { get; private set; }
 
     public Canvas(GL gl, ShaderHelper shaderHelper, Rectangle<int> rectangle)
@@ -69,21 +71,31 @@ public unsafe class Canvas : IDisposable
 
         // 矩形坐标系
         {
-            float[] rectangleVertices = new float[12];
+            float[] vertices = new float[12];
 
             RectangleBuffer = _gl.GenBuffer();
             _gl.BindBuffer(GLEnum.ArrayBuffer, RectangleBuffer);
-            _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(rectangleVertices.Length * sizeof(float)), rectangleVertices, GLEnum.DynamicDraw);
+            _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.DynamicDraw);
             _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
         }
 
         // 圆形坐标系
         {
-            float[] circleVertices = new float[CirclePoints * 3];
+            float[] vertices = new float[CirclePoints * 3];
 
             CircleBuffer = _gl.GenBuffer();
             _gl.BindBuffer(GLEnum.ArrayBuffer, CircleBuffer);
-            _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(circleVertices.Length * sizeof(float)), circleVertices, GLEnum.DynamicDraw);
+            _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.DynamicDraw);
+            _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
+        }
+
+        // 线段坐标系
+        {
+            float[] vertices = new float[12];
+
+            LineBuffer = _gl.GenBuffer();
+            _gl.BindBuffer(GLEnum.ArrayBuffer, LineBuffer);
+            _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.DynamicDraw);
             _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
         }
 
@@ -172,6 +184,47 @@ public unsafe class Canvas : IDisposable
             _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
 
             _gl.DrawArrays(GLEnum.TriangleFan, 0, CirclePoints);
+        });
+    }
+
+    public void DrawLine(PointF start, PointF end, float width, Color color)
+    {
+        Draw(SolidColorProgram, () =>
+        {
+            _gl.Uniform4(SolidColorProgram.GetUniformLocation("solidColor"), color.ToVector4());
+
+            float[] vertices = new float[12];
+
+            float dx = end.X - start.X;
+            float dy = end.Y - start.Y;
+            float length = MathF.Sqrt(dx * dx + dy * dy);
+            float nx = dy / length;
+            float ny = -dx / length;
+
+            vertices[0] = start.X + nx * width / 2;
+            vertices[1] = start.Y + ny * width / 2;
+            vertices[2] = 0.0f;
+
+            vertices[3] = start.X - nx * width / 2;
+            vertices[4] = start.Y - ny * width / 2;
+            vertices[5] = 0.0f;
+
+            vertices[6] = end.X + nx * width / 2;
+            vertices[7] = end.Y + ny * width / 2;
+            vertices[8] = 0.0f;
+
+            vertices[9] = end.X - nx * width / 2;
+            vertices[10] = end.Y - ny * width / 2;
+            vertices[11] = 0.0f;
+
+            _gl.BindBuffer(GLEnum.ArrayBuffer, LineBuffer);
+
+            _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(vertices.Length * sizeof(float)), vertices);
+            _gl.VertexAttribPointer((uint)SolidColorProgram.GetAttribLocation("position"), 3, GLEnum.Float, false, 0, null);
+
+            _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
+
+            _gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
         });
     }
 

@@ -73,18 +73,23 @@ internal unsafe class Program
 
         canvas.Clear(Color.White);
 
-        float wSum = (float)width / 20;
-        float hSum = (float)height / 20;
+        float wSum = (float)width / 30;
+        float hSum = (float)height / 30;
 
-        for (int i = 0; i < 20; i++)
+        for (int i = 0; i < 30; i++)
         {
-            for (int j = 0; j < 20; j++)
+            for (int j = 0; j < 30; j++)
             {
+                canvas.DrawLine(new PointF(wSum * i, hSum * j), new PointF(wSum * i, hSum * j + hSum), 1, Color.Black);
+                canvas.DrawLine(new PointF(wSum * i, hSum * j + hSum), new PointF(wSum * i + wSum, hSum * j + hSum), 1, Color.Black);
+                canvas.DrawLine(new PointF(wSum * i + wSum, hSum * j + hSum), new PointF(wSum * i + wSum, hSum * j), 1, Color.Black);
+                canvas.DrawLine(new PointF(wSum * i + wSum, hSum * j), new PointF(wSum * i, hSum * j), 1, Color.Black);
+
                 float hue = (float)stopwatch.Elapsed.TotalSeconds * 0.15f % 1;
 
                 canvas.DrawRectangle(new RectangleF(wSum * i + wSum / 4, hSum * j + hSum / 4, wSum / 2, hSum / 2), new Vector4(1.0f * hue, 1.0f * 0.75f, 1.0f * 0.75f, 1.0f).ToColor());
 
-                hue = (float)stopwatch.Elapsed.TotalSeconds * 0.50f % 1;
+                hue = (float)stopwatch.Elapsed.TotalSeconds * 0.30f % 1;
 
                 canvas.DrawCircle(new PointF(wSum * i + wSum / 2, hSum * j + hSum / 2), 10, new Vector4(1.0f * hue, 1.0f * 0.75f, 1.0f * 0.75f, 1.0f).ToColor());
             }
