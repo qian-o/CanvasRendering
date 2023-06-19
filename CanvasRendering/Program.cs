@@ -18,7 +18,7 @@ internal unsafe class Program
     private static uint texCoordAttrib;
     private static int width = 800, height = 600;
     private static Canvas canvas;
-    private static Stopwatch stopwatch = Stopwatch.StartNew();
+    private static Stopwatch stopwatch;
 
     static void Main(string[] args)
     {
@@ -53,6 +53,7 @@ internal unsafe class Program
         texCoordAttrib = (uint)shaderProgram.GetAttribLocation("texCoord");
 
         canvas = new(gl, shaderHelper, new Rectangle<int>(0, 0, width, height));
+        stopwatch = Stopwatch.StartNew();
     }
 
     private static void Window_Resize(Vector2D<int> obj)

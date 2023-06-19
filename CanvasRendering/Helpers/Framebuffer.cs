@@ -5,14 +5,14 @@ namespace CanvasRendering.Helpers;
 
 public unsafe class Framebuffer : IDisposable
 {
-    private const int MaxSamples = 8;
-
     private readonly GL _gl;
     private readonly Vector2D<uint> _size;
 
     public GLEnum Format { get; }
 
     public GLEnum Type { get; }
+
+    public uint MaxSamples { get; }
 
     public uint DrawFbo { get; }
 
@@ -31,9 +31,11 @@ public unsafe class Framebuffer : IDisposable
 
         _gl.GetInteger(GLEnum.ImplementationColorReadFormat, out int format);
         _gl.GetInteger(GLEnum.ImplementationColorReadType, out int type);
+        _gl.GetInteger(GLEnum.MaxSamples, out int maxSamples);
 
         Format = (GLEnum)format;
         Type = (GLEnum)type;
+        MaxSamples = (uint)maxSamples;
 
         MultisampleFbo = _gl.GenFramebuffer();
         MultisampleTexture = _gl.GenTexture();
