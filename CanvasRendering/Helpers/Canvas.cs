@@ -12,22 +12,69 @@ public unsafe class Canvas : IDisposable
     private readonly GL _gl;
     private readonly ShaderHelper _shaderHelper;
 
+    /// <summary>
+    /// 绘制状态
+    /// </summary>
+    public bool IsDrawing { get; private set; }
+
+    /// <summary>
+    /// 记录之前的帧缓冲区
+    /// </summary>
+    public uint RecordFbo { get; private set; }
+
+    /// <summary>
+    /// 记录之前的位置
+    /// </summary>
+    public Vector2D<int> RecordPosition { get; private set; }
+
+    /// <summary>
+    /// 记录之前的大小
+    /// </summary>
+    public Vector2D<uint> RecordSize { get; private set; }
+
+    /// <summary>
+    /// 当前画板的位置及大小
+    /// </summary>
     public Rectangle<int> Rectangle { get; private set; }
 
+    /// <summary>
+    /// 画板大小
+    /// </summary>
     public Vector2D<uint> Size { get; private set; }
 
+    /// <summary>
+    /// 帧缓冲区
+    /// </summary>
     public Framebuffer Framebuffer { get; private set; }
 
+    /// <summary>
+    /// 纹理坐标缓冲区
+    /// </summary>
     public uint TexCoordBuffer { get; private set; }
 
+    /// <summary>
+    /// 顶点坐标缓冲区
+    /// </summary>
     public uint VertexBuffer { get; private set; }
 
+    /// <summary>
+    /// 矩形坐标缓冲区
+    /// </summary>
     public uint RectangleBuffer { get; private set; }
 
+    /// <summary>
+    /// 圆形坐标缓冲区
+    /// </summary>
     public uint CircleBuffer { get; private set; }
 
+    /// <summary>
+    /// 线段坐标缓冲区
+    /// </summary>
     public uint LineBuffer { get; private set; }
 
+    /// <summary>
+    /// 纯色着色器程序
+    /// </summary>
     public ShaderProgram SolidColorProgram { get; private set; }
 
     public Canvas(GL gl, ShaderHelper shaderHelper, Rectangle<int> rectangle)
@@ -40,6 +87,9 @@ public unsafe class Canvas : IDisposable
         Resize(rectangle);
     }
 
+    /// <summary>
+    /// 初始化
+    /// </summary>
     private void Initialization()
     {
         // 纹理坐标系
@@ -101,6 +151,10 @@ public unsafe class Canvas : IDisposable
         SolidColorProgram.Attach(_shaderHelper.GetShader("defaultVertex.vert"), _shaderHelper.GetShader("solidColor.frag"));
     }
 
+    /// <summary>
+    /// 调整画板大小
+    /// </summary>
+    /// <param name="rectangle">位置及大小</param>
     public void Resize(Rectangle<int> rectangle)
     {
         Rectangle = rectangle;
@@ -132,18 +186,62 @@ public unsafe class Canvas : IDisposable
         }
     }
 
-    public void Clear(Color color)
+    /// <summary>
+    /// 开始绘制（记录之前的帧缓冲及视口大小）
+    /// </summary>
+    public void Begin()
     {
-        _gl.BindFramebuffer(GLEnum.Framebuffer, Framebuffer.MultisampleFbo);
+        if (!IsDrawing)
+        {
+            int[] viewport = new int[4];
+            _gl.GetInteger(GLEnum.FramebufferBinding, out int fbo);
+            _gl.GetInteger(GLEnum.Viewport, viewport);
 
-        _gl.Viewport(0, 0, Size.X, Size.Y);
+            RecordFbo = (uint)fbo;
+            RecordPosition = new Vector2D<int>(viewport[0], viewport[1]);
+            RecordSize = new Vector2D<uint>((uint)viewport[2], (uint)viewport[3]);
 
-        _gl.ClearColor(color);
-        _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+            _gl.BindFramebuffer(GLEnum.Framebuffer, Framebuffer.MultisampleFbo);
+            _gl.Viewport(0, 0, Size.X, Size.Y);
 
-        _gl.BindFramebuffer(GLEnum.Framebuffer, 0);
+            IsDrawing = true;
+        }
     }
 
+    /// <summary>
+    /// 结束绘制（还原之前记录的帧缓冲及视口大小）
+    /// </summary>
+    public void End()
+    {
+        if (IsDrawing)
+        {
+            _gl.BindFramebuffer(GLEnum.ReadFramebuffer, Framebuffer.MultisampleFbo);
+            _gl.BindFramebuffer(GLEnum.DrawFramebuffer, Framebuffer.DrawFbo);
+            _gl.BlitFramebuffer(0, 0, (int)Size.X, (int)Size.Y, 0, 0, (int)Size.X, (int)Size.Y, ClearBufferMask.ColorBufferBit, GLEnum.Nearest);
+
+            _gl.BindFramebuffer(GLEnum.Framebuffer, RecordFbo);
+            _gl.Viewport(RecordPosition.X, RecordPosition.Y, RecordSize.X, RecordSize.Y);
+
+            IsDrawing = false;
+        }
+    }
+
+    /// <summary>
+    /// 清空画板（清空颜色由外部控制）
+    /// </summary>
+    public void Clear()
+    {
+        Draw(null, () =>
+        {
+            _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+        });
+    }
+
+    /// <summary>
+    /// 绘制矩形
+    /// </summary>
+    /// <param name="rectangle">矩形位置及大小</param>
+    /// <param name="color">填充颜色</param>
     public void DrawRectangle(RectangleF rectangle, Color color)
     {
         Draw(SolidColorProgram, () =>
@@ -168,6 +266,12 @@ public unsafe class Canvas : IDisposable
         });
     }
 
+    /// <summary>
+    /// 绘制圆形
+    /// </summary>
+    /// <param name="origin">中心点</param>
+    /// <param name="radius">半径</param>
+    /// <param name="color">填充颜色</param>
     public void DrawCircle(PointF origin, float radius, Color color)
     {
         Draw(SolidColorProgram, () =>
@@ -193,6 +297,13 @@ public unsafe class Canvas : IDisposable
         });
     }
 
+    /// <summary>
+    /// 绘制线段
+    /// </summary>
+    /// <param name="start">起始点</param>
+    /// <param name="end">结束点</param>
+    /// <param name="width">线宽</param>
+    /// <param name="color">填充颜色</param>
     public void DrawLine(PointF start, PointF end, float width, Color color)
     {
         Draw(SolidColorProgram, () =>
@@ -234,17 +345,9 @@ public unsafe class Canvas : IDisposable
         });
     }
 
-    public void Flush()
-    {
-        _gl.BindFramebuffer(GLEnum.Framebuffer, Framebuffer.MultisampleFbo);
-
-        _gl.BindFramebuffer(GLEnum.ReadFramebuffer, Framebuffer.MultisampleFbo);
-        _gl.BindFramebuffer(GLEnum.DrawFramebuffer, Framebuffer.DrawFbo);
-        _gl.BlitFramebuffer(0, 0, (int)Size.X, (int)Size.Y, 0, 0, (int)Size.X, (int)Size.Y, ClearBufferMask.ColorBufferBit, GLEnum.Nearest);
-
-        _gl.BindFramebuffer(GLEnum.Framebuffer, 0);
-    }
-
+    /// <summary>
+    /// 回收资源
+    /// </summary>
     public void Dispose()
     {
         Framebuffer.Dispose();
@@ -259,24 +362,34 @@ public unsafe class Canvas : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private void Draw(ShaderProgram program, Action action)
+    /// <summary>
+    /// 内部绘制使用
+    /// 用于判断是否正在绘制，如果正在绘制则使用指定的着色器程序进行绘制。
+    /// </summary>
+    /// <param name="program">着色器程序</param>
+    /// <param name="drawAction">绘制函数</param>
+    private void Draw(ShaderProgram program, Action drawAction)
     {
-        uint positionAttrib = (uint)program.GetAttribLocation("position");
+        if (IsDrawing)
+        {
+            if (program == null)
+            {
+                drawAction?.Invoke();
+            }
+            else
+            {
+                uint positionAttrib = (uint)program.GetAttribLocation("position");
 
-        _gl.BindFramebuffer(GLEnum.Framebuffer, Framebuffer.MultisampleFbo);
+                _gl.EnableVertexAttribArray(positionAttrib);
 
-        _gl.Viewport(0, 0, Size.X, Size.Y);
+                program.Enable();
 
-        _gl.EnableVertexAttribArray(positionAttrib);
+                drawAction?.Invoke();
 
-        program.Enable();
+                program.Disable();
 
-        action?.Invoke();
-
-        program.Disable();
-
-        _gl.DisableVertexAttribArray(positionAttrib);
-
-        _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+                _gl.DisableVertexAttribArray(positionAttrib);
+            }
+        }
     }
 }

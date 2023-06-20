@@ -47,6 +47,8 @@ internal unsafe class Program
     {
         gl = window.CreateOpenGLES();
 
+        gl.ClearColor(Color.White);
+
         shaderHelper = new ShaderHelper(gl);
 
         shaderProgram = new ShaderProgram(gl);
@@ -64,6 +66,8 @@ internal unsafe class Program
         width = obj.X;
         height = obj.Y;
 
+        gl.Viewport(0, 0, (uint)width, (uint)height);
+
         canvas.Resize(new Rectangle<int>(0, 0, width, height));
 
         window.DoRender();
@@ -71,34 +75,33 @@ internal unsafe class Program
 
     private static void Window_Render(double obj)
     {
-        gl.ClearColor(Color.White);
-        gl.Clear(ClearBufferMask.ColorBufferBit);
-
-        canvas.Clear(Color.White);
-
-        float wSum = (float)width / 30;
-        float hSum = (float)height / 30;
-
-        for (int i = 0; i < 30; i++)
+        canvas.Begin();
         {
-            for (int j = 0; j < 30; j++)
+            canvas.Clear();
+
+            float wSum = (float)width / 30;
+            float hSum = (float)height / 30;
+
+            for (int i = 0; i < 30; i++)
             {
-                canvas.DrawLine(new PointF(wSum * i, hSum * j), new PointF(wSum * i, hSum * j + hSum), 1, Color.Black);
-                canvas.DrawLine(new PointF(wSum * i, hSum * j + hSum), new PointF(wSum * i + wSum, hSum * j + hSum), 1, Color.Black);
-                canvas.DrawLine(new PointF(wSum * i + wSum, hSum * j + hSum), new PointF(wSum * i + wSum, hSum * j), 1, Color.Black);
-                canvas.DrawLine(new PointF(wSum * i + wSum, hSum * j), new PointF(wSum * i, hSum * j), 1, Color.Black);
+                for (int j = 0; j < 30; j++)
+                {
+                    canvas.DrawLine(new PointF(wSum * i, hSum * j), new PointF(wSum * i, hSum * j + hSum), 1, Color.Black);
+                    canvas.DrawLine(new PointF(wSum * i, hSum * j + hSum), new PointF(wSum * i + wSum, hSum * j + hSum), 1, Color.Black);
+                    canvas.DrawLine(new PointF(wSum * i + wSum, hSum * j + hSum), new PointF(wSum * i + wSum, hSum * j), 1, Color.Black);
+                    canvas.DrawLine(new PointF(wSum * i + wSum, hSum * j), new PointF(wSum * i, hSum * j), 1, Color.Black);
 
-                float hue = (float)stopwatch.Elapsed.TotalSeconds * 0.15f % 1;
+                    float hue = (float)stopwatch.Elapsed.TotalSeconds * 0.15f % 1;
 
-                canvas.DrawRectangle(new RectangleF(wSum * i + wSum / 4, hSum * j + hSum / 4, wSum / 2, hSum / 2), new Vector4(1.0f * hue, 1.0f * 0.75f, 1.0f * 0.75f, 1.0f).ToColor());
+                    canvas.DrawRectangle(new RectangleF(wSum * i + wSum / 4, hSum * j + hSum / 4, wSum / 2, hSum / 2), new Vector4(1.0f * hue, 1.0f * 0.75f, 1.0f * 0.75f, 1.0f).ToColor());
 
-                hue = (float)stopwatch.Elapsed.TotalSeconds * 0.30f % 1;
+                    hue = (float)stopwatch.Elapsed.TotalSeconds * 0.30f % 1;
 
-                canvas.DrawCircle(new PointF(wSum * i + wSum / 2, hSum * j + hSum / 2), 10, new Vector4(1.0f * hue, 1.0f * 0.75f, 1.0f * 0.75f, 1.0f).ToColor());
+                    canvas.DrawCircle(new PointF(wSum * i + wSum / 2, hSum * j + hSum / 2), 10, new Vector4(1.0f * hue, 1.0f * 0.75f, 1.0f * 0.75f, 1.0f).ToColor());
+                }
             }
         }
-
-        canvas.Flush();
+        canvas.End();
 
         DrawCanvas(canvas);
     }
@@ -117,7 +120,7 @@ internal unsafe class Program
 
     private static void DrawCanvas(Canvas canvas)
     {
-        gl.Viewport(0, 0, (uint)width, (uint)height);
+        gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
         gl.EnableVertexAttribArray(positionAttrib);
         gl.EnableVertexAttribArray(texCoordAttrib);
