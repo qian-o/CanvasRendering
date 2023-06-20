@@ -10,6 +10,8 @@ namespace CanvasRendering;
 
 internal unsafe class Program
 {
+    private static readonly List<int> _fpsSample = new();
+
     private static IWindow window;
     private static GL gl;
     private static ShaderHelper shaderHelper;
@@ -36,6 +38,7 @@ internal unsafe class Program
         window.Load += Window_Load;
         window.Resize += Window_Resize;
         window.Render += Window_Render;
+        window.Update += Window_Update;
 
         window.Run();
     }
@@ -98,6 +101,18 @@ internal unsafe class Program
         canvas.Flush();
 
         DrawCanvas(canvas);
+    }
+
+    private static void Window_Update(double obj)
+    {
+        if (_fpsSample.Count == 30)
+        {
+            window.Title = $"Texture Rendering - FPS: {Convert.ToInt32(_fpsSample.Average())}";
+
+            _fpsSample.Clear();
+        }
+
+        _fpsSample.Add(Convert.ToInt32(1 / obj));
     }
 
     private static void DrawCanvas(Canvas canvas)

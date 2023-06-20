@@ -16,8 +16,6 @@ public unsafe class Canvas : IDisposable
 
     public Vector2D<uint> Size { get; private set; }
 
-    public Matrix4x4 ProjectionMatrix { get; private set; }
-
     public Framebuffer Framebuffer { get; private set; }
 
     public uint TexCoordBuffer { get; private set; }
@@ -109,8 +107,6 @@ public unsafe class Canvas : IDisposable
 
         Size = new Vector2D<uint>((uint)Rectangle.Size.X, (uint)Rectangle.Size.Y);
 
-        ProjectionMatrix = Matrix4x4.CreateOrthographicOffCenter(0.0f, Size.X, 0.0f, Size.Y, -1.0f, 1.0f);
-
         Framebuffer?.Dispose();
         Framebuffer = new Framebuffer(_gl, Size);
 
@@ -124,6 +120,16 @@ public unsafe class Canvas : IDisposable
         _gl.BindBuffer(GLEnum.ArrayBuffer, VertexBuffer);
         _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(vertices.Length * sizeof(float)), vertices);
         _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
+
+        // SolidColorProgram projectionUniform
+        {
+            SolidColorProgram.Enable();
+
+            Matrix4x4 projectionMatrix = Matrix4x4.CreateOrthographicOffCenter(0.0f, Size.X, 0.0f, Size.Y, -1.0f, 1.0f);
+            _gl.UniformMatrix4(SolidColorProgram.GetUniformLocation("projection"), 1, false, (float*)&projectionMatrix);
+
+            SolidColorProgram.Disable();
+        }
     }
 
     public void Clear(Color color)
@@ -264,9 +270,6 @@ public unsafe class Canvas : IDisposable
         _gl.EnableVertexAttribArray(positionAttrib);
 
         program.Enable();
-
-        Matrix4x4 projectionMatrix = ProjectionMatrix;
-        _gl.UniformMatrix4(program.GetUniformLocation("projection"), 1, false, (float*)&projectionMatrix);
 
         action?.Invoke();
 
