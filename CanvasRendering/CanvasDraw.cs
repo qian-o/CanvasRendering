@@ -51,6 +51,8 @@ public unsafe static class CanvasDraw
 
     public static void Render(double obj)
     {
+        _ = obj;
+
         _canvas.Begin();
         {
             _canvas.Clear();

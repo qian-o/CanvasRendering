@@ -13,7 +13,7 @@ public class Program
 
     static void Main(string[] args)
     {
-        Console.WriteLine(args);
+        _ = args;
 
         WindowOptions options = WindowOptions.Default;
         options.Title = "Texture Rendering";

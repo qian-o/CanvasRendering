@@ -9,6 +9,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{2C
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WindowExample", "WindowExample\WindowExample.csproj", "{F24105A9-58F9-4C80-813A-8F485DB072D3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AndroidExample", "AndroidExample\AndroidExample.csproj", "{448C30E8-2CBF-4FF3-B1D4-3BE1665874BA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -23,12 +25,19 @@ Global
 		{F24105A9-58F9-4C80-813A-8F485DB072D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F24105A9-58F9-4C80-813A-8F485DB072D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F24105A9-58F9-4C80-813A-8F485DB072D3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{448C30E8-2CBF-4FF3-B1D4-3BE1665874BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{448C30E8-2CBF-4FF3-B1D4-3BE1665874BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{448C30E8-2CBF-4FF3-B1D4-3BE1665874BA}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{448C30E8-2CBF-4FF3-B1D4-3BE1665874BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{448C30E8-2CBF-4FF3-B1D4-3BE1665874BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{448C30E8-2CBF-4FF3-B1D4-3BE1665874BA}.Release|Any CPU.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{F24105A9-58F9-4C80-813A-8F485DB072D3} = {2CD6630D-52C1-4171-90AB-FA5913EBD175}
+		{448C30E8-2CBF-4FF3-B1D4-3BE1665874BA} = {2CD6630D-52C1-4171-90AB-FA5913EBD175}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {06178E39-1714-4A2C-AA5B-BC510F100E5C}
