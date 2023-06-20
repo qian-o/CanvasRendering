@@ -15,7 +15,7 @@ public class MainActivity : SilkActivity
         ViewOptions options = ViewOptions.Default;
         options.API = new GraphicsAPI(ContextAPI.OpenGLES, new APIVersion(3, 2));
         view = Silk.NET.Windowing.Window.GetView(options);
-        
+
         view.Load += () => CanvasDraw.Load(view.CreateOpenGLES(), view.Size.X, view.Size.Y);
         view.Resize += (d) => { CanvasDraw.Resize(d); view.DoRender(); };
         view.Render += CanvasDraw.Render;
