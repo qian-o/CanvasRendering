@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
 		<OutputType>Library</OutputType>
@@ -12,21 +12,6 @@
 	<ItemGroup>
 		<PackageReference Include="Silk.NET.Maths" Version="2.17.1" />
 		<PackageReference Include="Silk.NET.OpenGLES" Version="2.17.1" />
-	</ItemGroup>
-
-	<ItemGroup>
-		<None Update="Shaders\texture.frag">
-			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-		</None>
-		<None Update="Shaders\defaultVertex.vert">
-			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
-		<None Update="Shaders\texture.frag">
-		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
-		<None Update="Shaders\solidColor.frag">
-		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</None>
 	</ItemGroup>
 
 </Project>
