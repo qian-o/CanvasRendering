@@ -78,6 +78,24 @@ public unsafe static class CanvasDraw
                     _canvas.DrawCircle(new PointF(wSum * i + wSum / 2, hSum * j + hSum / 2), 10, new Vector4(1.0f * hue, 1.0f * 0.75f, 1.0f * 0.75f, 1.0f).ToColor());
                 }
             }
+
+            Canvas canvas = new(_gl, _shaderHelper, new Rectangle<int>(100, 100, 200, 200));
+            canvas.Begin();
+            {
+                canvas.Clear();
+
+                canvas.DrawLine(new PointF(0, 0), new PointF(200, 200), 10, Color.Red);
+                canvas.DrawLine(new PointF(200, 0), new PointF(0, 200), 10, Color.Red);
+
+                canvas.DrawRectangle(new RectangleF(0, 0, 200, 200), Color.Blue);
+
+                canvas.DrawCircle(new PointF(100, 100), 100, Color.Green);
+            }
+            canvas.End();
+
+            _canvas.DrawCanvas(canvas);
+
+            canvas.Dispose();
         }
         _canvas.End();
 

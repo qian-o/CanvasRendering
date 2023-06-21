@@ -1,4 +1,5 @@
-﻿using Silk.NET.Maths;
+﻿using CanvasRendering.Shaders;
+using Silk.NET.Maths;
 using Silk.NET.OpenGLES;
 using System.Drawing;
 using System.Numerics;
@@ -77,6 +78,11 @@ public unsafe class Canvas : IDisposable
     /// </summary>
     public ShaderProgram SolidColorProgram { get; private set; }
 
+    /// <summary>
+    /// 纹理着色器程序
+    /// </summary>
+    public ShaderProgram TextureProgram { get; private set; }
+
     public Canvas(GL gl, ShaderHelper shaderHelper, Rectangle<int> rectangle)
     {
         _gl = gl;
@@ -148,7 +154,10 @@ public unsafe class Canvas : IDisposable
         }
 
         SolidColorProgram = new ShaderProgram(_gl);
-        SolidColorProgram.Attach(_shaderHelper.GetShader("defaultVertex.vert"), _shaderHelper.GetShader("solidColor.frag"));
+        SolidColorProgram.Attach(_shaderHelper.GetShader(DefaultVertex.Name), _shaderHelper.GetShader(SolidColorFragment.Name));
+
+        TextureProgram = new ShaderProgram(_gl);
+        TextureProgram.Attach(_shaderHelper.GetShader(DefaultVertex.Name), _shaderHelper.GetShader(TextureFragment.Name));
     }
 
     /// <summary>
@@ -180,9 +189,19 @@ public unsafe class Canvas : IDisposable
             SolidColorProgram.Enable();
 
             Matrix4x4 projectionMatrix = Matrix4x4.CreateOrthographicOffCenter(0.0f, Size.X, 0.0f, Size.Y, -1.0f, 1.0f);
-            _gl.UniformMatrix4(SolidColorProgram.GetUniformLocation("projection"), 1, false, (float*)&projectionMatrix);
+            _gl.UniformMatrix4(SolidColorProgram.GetUniformLocation(DefaultVertex.ProjectionUniform), 1, false, (float*)&projectionMatrix);
 
             SolidColorProgram.Disable();
+        }
+
+        // TextureProgram projectionUniform
+        {
+            TextureProgram.Enable();
+
+            Matrix4x4 projectionMatrix = Matrix4x4.CreateOrthographicOffCenter(0.0f, Size.X, 0.0f, Size.Y, -1.0f, 1.0f);
+            _gl.UniformMatrix4(TextureProgram.GetUniformLocation(DefaultVertex.ProjectionUniform), 1, false, (float*)&projectionMatrix);
+
+            TextureProgram.Disable();
         }
     }
 
@@ -246,7 +265,7 @@ public unsafe class Canvas : IDisposable
     {
         Draw(SolidColorProgram, () =>
         {
-            _gl.Uniform4(SolidColorProgram.GetUniformLocation("solidColor"), color.ToVector4());
+            _gl.Uniform4(SolidColorProgram.GetUniformLocation(SolidColorFragment.SolidColorUniform), color.ToVector4());
 
             float[] vertices = new float[] {
                 rectangle.Left, rectangle.Top, 0.0f,
@@ -258,7 +277,7 @@ public unsafe class Canvas : IDisposable
             _gl.BindBuffer(GLEnum.ArrayBuffer, RectangleBuffer);
 
             _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(vertices.Length * sizeof(float)), vertices);
-            _gl.VertexAttribPointer((uint)SolidColorProgram.GetAttribLocation("position"), 3, GLEnum.Float, false, 0, null);
+            _gl.VertexAttribPointer((uint)SolidColorProgram.GetAttribLocation(DefaultVertex.PositionAttrib), 3, GLEnum.Float, false, 0, null);
 
             _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
 
@@ -276,7 +295,7 @@ public unsafe class Canvas : IDisposable
     {
         Draw(SolidColorProgram, () =>
         {
-            _gl.Uniform4(SolidColorProgram.GetUniformLocation("solidColor"), color.ToVector4());
+            _gl.Uniform4(SolidColorProgram.GetUniformLocation(SolidColorFragment.SolidColorUniform), color.ToVector4());
 
             float[] vertices = new float[CirclePoints * 3];
             for (int i = 0; i < CirclePoints; i++)
@@ -289,7 +308,7 @@ public unsafe class Canvas : IDisposable
             _gl.BindBuffer(GLEnum.ArrayBuffer, CircleBuffer);
 
             _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(vertices.Length * sizeof(float)), vertices);
-            _gl.VertexAttribPointer((uint)SolidColorProgram.GetAttribLocation("position"), 3, GLEnum.Float, false, 0, null);
+            _gl.VertexAttribPointer((uint)SolidColorProgram.GetAttribLocation(DefaultVertex.PositionAttrib), 3, GLEnum.Float, false, 0, null);
 
             _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
 
@@ -308,7 +327,7 @@ public unsafe class Canvas : IDisposable
     {
         Draw(SolidColorProgram, () =>
         {
-            _gl.Uniform4(SolidColorProgram.GetUniformLocation("solidColor"), color.ToVector4());
+            _gl.Uniform4(SolidColorProgram.GetUniformLocation(SolidColorFragment.SolidColorUniform), color.ToVector4());
 
             float[] vertices = new float[12];
 
@@ -337,11 +356,35 @@ public unsafe class Canvas : IDisposable
             _gl.BindBuffer(GLEnum.ArrayBuffer, LineBuffer);
 
             _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(vertices.Length * sizeof(float)), vertices);
-            _gl.VertexAttribPointer((uint)SolidColorProgram.GetAttribLocation("position"), 3, GLEnum.Float, false, 0, null);
+            _gl.VertexAttribPointer((uint)SolidColorProgram.GetAttribLocation(DefaultVertex.PositionAttrib), 3, GLEnum.Float, false, 0, null);
 
             _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
 
             _gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
+        });
+    }
+
+    /// <summary>
+    /// 绘制画板
+    /// </summary>
+    /// <param name="canvas"></param>
+    public void DrawCanvas(Canvas canvas)
+    {
+        Draw(TextureProgram, () =>
+        {
+            _gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
+            _gl.VertexAttribPointer((uint)TextureProgram.GetAttribLocation(DefaultVertex.PositionAttrib), 3, GLEnum.Float, false, 0, null);
+
+            _gl.BindBuffer(GLEnum.ArrayBuffer, canvas.TexCoordBuffer);
+            _gl.VertexAttribPointer((uint)TextureProgram.GetAttribLocation(DefaultVertex.TexCoordAttrib), 2, GLEnum.Float, false, 0, null);
+
+            _gl.ActiveTexture(GLEnum.Texture0);
+            _gl.BindTexture(GLEnum.Texture2D, canvas.Framebuffer.DrawTexture);
+            _gl.Uniform1(TextureProgram.GetUniformLocation(TextureFragment.TexUniform), 0);
+
+            _gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
+
+            _gl.BindTexture(GLEnum.Texture2D, 0);
         });
     }
 
@@ -356,8 +399,10 @@ public unsafe class Canvas : IDisposable
         _gl.DeleteBuffer(TexCoordBuffer);
         _gl.DeleteBuffer(RectangleBuffer);
         _gl.DeleteBuffer(CircleBuffer);
+        _gl.DeleteBuffer(LineBuffer);
 
         SolidColorProgram.Dispose();
+        TextureProgram.Dispose();
 
         GC.SuppressFinalize(this);
     }
@@ -376,9 +421,9 @@ public unsafe class Canvas : IDisposable
             {
                 drawAction?.Invoke();
             }
-            else
+            else if (program == SolidColorProgram)
             {
-                uint positionAttrib = (uint)program.GetAttribLocation("position");
+                uint positionAttrib = (uint)program.GetAttribLocation(DefaultVertex.PositionAttrib);
 
                 _gl.EnableVertexAttribArray(positionAttrib);
 
@@ -389,6 +434,23 @@ public unsafe class Canvas : IDisposable
                 program.Disable();
 
                 _gl.DisableVertexAttribArray(positionAttrib);
+            }
+            else if (program == TextureProgram)
+            {
+                uint positionAttrib = (uint)program.GetAttribLocation(DefaultVertex.PositionAttrib);
+                uint texCoordAttrib = (uint)program.GetAttribLocation(DefaultVertex.TexCoordAttrib);
+
+                _gl.EnableVertexAttribArray(positionAttrib);
+                _gl.EnableVertexAttribArray(texCoordAttrib);
+
+                program.Enable();
+
+                drawAction?.Invoke();
+
+                program.Disable();
+
+                _gl.DisableVertexAttribArray(positionAttrib);
+                _gl.DisableVertexAttribArray(texCoordAttrib);
             }
         }
     }

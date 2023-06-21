@@ -29,6 +29,7 @@ public unsafe class Framebuffer : IDisposable
         _gl = gl;
         _size = size;
 
+        _gl.GetInteger(GLEnum.FramebufferBinding, out int fbo);
         _gl.GetInteger(GLEnum.ImplementationColorReadFormat, out int format);
         _gl.GetInteger(GLEnum.ImplementationColorReadType, out int type);
         _gl.GetInteger(GLEnum.MaxSamples, out int maxSamples);
@@ -91,17 +92,8 @@ public unsafe class Framebuffer : IDisposable
 
             _gl.BindFramebuffer(GLEnum.Framebuffer, 0);
         }
-    }
 
-    public void GenBmp(string filePath)
-    {
-        byte[] bytes = new byte[_size.X * _size.Y * 4];
-
-        fixed (void* data = bytes)
-        {
-            _gl.BindFramebuffer(GLEnum.Framebuffer, MultisampleFbo);
-            _gl.ReadnPixels(0, 0, _size.X, _size.Y, Format, Type, (uint)bytes.Length, data);
-        }
+        _gl.BindFramebuffer(GLEnum.Framebuffer, (uint)fbo);
     }
 
     public void Dispose()
