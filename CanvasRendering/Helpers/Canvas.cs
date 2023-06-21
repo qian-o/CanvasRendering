@@ -34,14 +34,9 @@ public unsafe class Canvas : IDisposable
     public Vector2D<uint> RecordSize { get; private set; }
 
     /// <summary>
-    /// 当前画板的位置及大小
-    /// </summary>
-    public Rectangle<int> Rectangle { get; private set; }
-
-    /// <summary>
     /// 画板大小
     /// </summary>
-    public Vector2D<uint> Size { get; private set; }
+    public Vector2D<uint> Size { get; }
 
     /// <summary>
     /// 帧缓冲区
@@ -49,14 +44,14 @@ public unsafe class Canvas : IDisposable
     public Framebuffer Framebuffer { get; private set; }
 
     /// <summary>
-    /// 纹理坐标缓冲区
-    /// </summary>
-    public uint TexCoordBuffer { get; private set; }
-
-    /// <summary>
     /// 顶点坐标缓冲区
     /// </summary>
     public uint VertexBuffer { get; private set; }
+
+    /// <summary>
+    /// 纹理坐标缓冲区
+    /// </summary>
+    public uint TexCoordBuffer { get; private set; }
 
     /// <summary>
     /// 矩形坐标缓冲区
@@ -83,14 +78,13 @@ public unsafe class Canvas : IDisposable
     /// </summary>
     public ShaderProgram TextureProgram { get; private set; }
 
-    public Canvas(GL gl, ShaderHelper shaderHelper, Rectangle<int> rectangle)
+    public Canvas(GL gl, ShaderHelper shaderHelper, Vector2D<uint> size)
     {
         _gl = gl;
         _shaderHelper = shaderHelper;
+        Size = size;
 
         Initialization();
-
-        Resize(rectangle);
     }
 
     /// <summary>
@@ -98,6 +92,18 @@ public unsafe class Canvas : IDisposable
     /// </summary>
     private void Initialization()
     {
+        Framebuffer = new Framebuffer(_gl, Size);
+
+        // 顶点坐标系
+        {
+            float[] vertices = new float[12];
+
+            VertexBuffer = _gl.GenBuffer();
+            _gl.BindBuffer(GLEnum.ArrayBuffer, VertexBuffer);
+            _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.DynamicDraw);
+            _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
+        }
+
         // 纹理坐标系
         {
             float[] texCoords = new float[] {
@@ -110,16 +116,6 @@ public unsafe class Canvas : IDisposable
             TexCoordBuffer = _gl.GenBuffer();
             _gl.BindBuffer(GLEnum.ArrayBuffer, TexCoordBuffer);
             _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(texCoords.Length * sizeof(float)), texCoords, GLEnum.StaticDraw);
-            _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-        }
-
-        // 顶点坐标系
-        {
-            float[] vertices = new float[12];
-
-            VertexBuffer = _gl.GenBuffer();
-            _gl.BindBuffer(GLEnum.ArrayBuffer, VertexBuffer);
-            _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.DynamicDraw);
             _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
         }
 
@@ -153,39 +149,11 @@ public unsafe class Canvas : IDisposable
             _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
         }
 
-        SolidColorProgram = new ShaderProgram(_gl);
-        SolidColorProgram.Attach(_shaderHelper.GetShader(DefaultVertex.Name), _shaderHelper.GetShader(SolidColorFragment.Name));
-
-        TextureProgram = new ShaderProgram(_gl);
-        TextureProgram.Attach(_shaderHelper.GetShader(DefaultVertex.Name), _shaderHelper.GetShader(TextureFragment.Name));
-    }
-
-    /// <summary>
-    /// 调整画板大小
-    /// </summary>
-    /// <param name="rectangle">位置及大小</param>
-    public void Resize(Rectangle<int> rectangle)
-    {
-        Rectangle = rectangle;
-
-        Size = new Vector2D<uint>((uint)Rectangle.Size.X, (uint)Rectangle.Size.Y);
-
-        Framebuffer?.Dispose();
-        Framebuffer = new Framebuffer(_gl, Size);
-
-        float[] vertices = new float[] {
-            Rectangle.Origin.X, Rectangle.Origin.Y, 0,
-            Rectangle.Origin.X, Rectangle.Max.Y, 0,
-            Rectangle.Max.X, Rectangle.Origin.Y, 0,
-            Rectangle.Max.X, Rectangle.Max.Y, 0
-        };
-
-        _gl.BindBuffer(GLEnum.ArrayBuffer, VertexBuffer);
-        _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(vertices.Length * sizeof(float)), vertices);
-        _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-
-        // SolidColorProgram projectionUniform
+        // SolidColorProgram
         {
+            SolidColorProgram = new ShaderProgram(_gl);
+            SolidColorProgram.Attach(_shaderHelper.GetShader(DefaultVertex.Name), _shaderHelper.GetShader(SolidColorFragment.Name));
+
             SolidColorProgram.Enable();
 
             Matrix4x4 projectionMatrix = Matrix4x4.CreateOrthographicOffCenter(0.0f, Size.X, 0.0f, Size.Y, -1.0f, 1.0f);
@@ -194,8 +162,11 @@ public unsafe class Canvas : IDisposable
             SolidColorProgram.Disable();
         }
 
-        // TextureProgram projectionUniform
+        // TextureProgram
         {
+            TextureProgram = new ShaderProgram(_gl);
+            TextureProgram.Attach(_shaderHelper.GetShader(DefaultVertex.Name), _shaderHelper.GetShader(TextureFragment.Name));
+
             TextureProgram.Enable();
 
             Matrix4x4 projectionMatrix = Matrix4x4.CreateOrthographicOffCenter(0.0f, Size.X, 0.0f, Size.Y, -1.0f, 1.0f);
@@ -367,11 +338,29 @@ public unsafe class Canvas : IDisposable
     /// <summary>
     /// 绘制画板
     /// </summary>
-    /// <param name="canvas"></param>
-    public void DrawCanvas(Canvas canvas)
+    /// <param name="canvas">画板</param>
+    public void DrawCanvas(Canvas canvas, Rectangle<int> rectangle, bool clipToBounds)
     {
         Draw(TextureProgram, () =>
         {
+            uint width, height;
+            if (clipToBounds)
+            {
+                width = (uint)rectangle.Size.X;
+                height = (uint)rectangle.Size.Y;
+            }
+            else
+            {
+                width = canvas.Size.X;
+                height = canvas.Size.Y;
+            }
+
+            _gl.Enable(GLEnum.ScissorTest);
+
+            _gl.Scissor(rectangle.Origin.X, rectangle.Origin.X, width, height);
+
+            canvas.UpdateVertexBuffer(new Rectangle<float>(rectangle.Origin.X, rectangle.Origin.Y, canvas.Size.X, canvas.Size.Y));
+
             _gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
             _gl.VertexAttribPointer((uint)TextureProgram.GetAttribLocation(DefaultVertex.PositionAttrib), 3, GLEnum.Float, false, 0, null);
 
@@ -385,6 +374,8 @@ public unsafe class Canvas : IDisposable
             _gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
 
             _gl.BindTexture(GLEnum.Texture2D, 0);
+
+            _gl.Disable(GLEnum.ScissorTest);
         });
     }
 
@@ -453,5 +444,69 @@ public unsafe class Canvas : IDisposable
                 _gl.DisableVertexAttribArray(texCoordAttrib);
             }
         }
+    }
+
+    /// <summary>
+    /// 更新当前画板的顶点缓冲区，用于后续绘制该画板时使用。
+    /// </summary>
+    /// <param name="rectangle">绘制该画板时的坐标及大小</param>
+    private void UpdateVertexBuffer(Rectangle<float> rectangle)
+    {
+        float[] vertices = new float[] {
+            rectangle.Origin.X, rectangle.Origin.Y, 0,
+            rectangle.Origin.X, rectangle.Max.Y, 0,
+            rectangle.Max.X, rectangle.Origin.Y, 0,
+            rectangle.Max.X, rectangle.Max.Y, 0
+        };
+
+        _gl.BindBuffer(GLEnum.ArrayBuffer, VertexBuffer);
+        _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(vertices.Length * sizeof(float)), vertices);
+        _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
+    }
+
+    /// <summary>
+    /// 在窗口上绘制画板
+    /// </summary>
+    /// <param name="gl">gl上下文</param>
+    /// <param name="textureProgram">纹理着色器程序</param>
+    /// <param name="canvas">画板</param>
+    public static void DrawOnWindow(GL gl, ShaderProgram textureProgram, Canvas canvas)
+    {
+        uint positionAttrib = (uint)textureProgram.GetAttribLocation(DefaultVertex.PositionAttrib);
+        uint texCoordAttrib = (uint)textureProgram.GetAttribLocation(DefaultVertex.TexCoordAttrib);
+
+        gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+
+        gl.EnableVertexAttribArray(positionAttrib);
+        gl.EnableVertexAttribArray(texCoordAttrib);
+
+        textureProgram.Enable();
+
+        Matrix4x4 projection = Matrix4x4.CreateOrthographicOffCenter(0.0f, canvas.Size.X, canvas.Size.Y, 0.0f, -1.0f, 1.0f);
+
+        gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.ProjectionUniform), 1, false, (float*)&projection);
+
+        canvas.UpdateVertexBuffer(new Rectangle<float>(0, 0, canvas.Size.X, canvas.Size.Y));
+
+        gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
+        gl.VertexAttribPointer(positionAttrib, 3, GLEnum.Float, false, 0, null);
+
+        gl.BindBuffer(GLEnum.ArrayBuffer, canvas.TexCoordBuffer);
+        gl.VertexAttribPointer(texCoordAttrib, 2, GLEnum.Float, false, 0, null);
+
+        gl.ActiveTexture(GLEnum.Texture0);
+        gl.BindTexture(GLEnum.Texture2D, canvas.Framebuffer.DrawTexture);
+        gl.Uniform1(textureProgram.GetUniformLocation(TextureFragment.TexUniform), 0);
+
+        gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
+
+        gl.BindTexture(GLEnum.Texture2D, 0);
+
+        gl.BindBuffer(GLEnum.ArrayBuffer, 0);
+
+        textureProgram.Disable();
+
+        gl.DisableVertexAttribArray(positionAttrib);
+        gl.DisableVertexAttribArray(texCoordAttrib);
     }
 }

@@ -12,8 +12,6 @@ public unsafe static class CanvasDraw
     private static GL _gl;
     private static ShaderHelper _shaderHelper;
     private static ShaderProgram _shaderProgram;
-    private static uint _positionAttrib;
-    private static uint _texCoordAttrib;
     private static int _width, _height;
     private static Canvas _canvas;
     private static Stopwatch _stopwatch;
@@ -29,13 +27,10 @@ public unsafe static class CanvasDraw
         _shaderProgram = new ShaderProgram(_gl);
         _shaderProgram.Attach(_shaderHelper.GetShader("defaultVertex.vert"), _shaderHelper.GetShader("texture.frag"));
 
-        _positionAttrib = (uint)_shaderProgram.GetAttribLocation("position");
-        _texCoordAttrib = (uint)_shaderProgram.GetAttribLocation("texCoord");
-
         _width = width;
         _height = height;
 
-        _canvas = new(_gl, _shaderHelper, new Rectangle<int>(0, 0, width, height));
+        _canvas = new(_gl, _shaderHelper, new Vector2D<uint>((uint)width, (uint)height));
         _stopwatch = Stopwatch.StartNew();
     }
 
@@ -46,7 +41,8 @@ public unsafe static class CanvasDraw
 
         _gl.Viewport(0, 0, (uint)_width, (uint)_height);
 
-        _canvas.Resize(new Rectangle<int>(0, 0, _width, _height));
+        _canvas?.Dispose();
+        _canvas = new(_gl, _shaderHelper, new Vector2D<uint>((uint)_width, (uint)_height));
     }
 
     public static void Render(double obj)
@@ -79,59 +75,25 @@ public unsafe static class CanvasDraw
                 }
             }
 
-            Canvas canvas = new(_gl, _shaderHelper, new Rectangle<int>(100, 100, 200, 200));
+            Canvas canvas = new(_gl, _shaderHelper, new Vector2D<uint>(200, 200));
             canvas.Begin();
             {
                 canvas.Clear();
 
-                canvas.DrawLine(new PointF(0, 0), new PointF(200, 200), 10, Color.Red);
-                canvas.DrawLine(new PointF(200, 0), new PointF(0, 200), 10, Color.Red);
-
                 canvas.DrawRectangle(new RectangleF(0, 0, 200, 200), Color.Blue);
 
                 canvas.DrawCircle(new PointF(100, 100), 100, Color.Green);
+
+                canvas.DrawLine(new PointF(0, 0), new PointF(200, 200), 2, Color.Azure);
             }
             canvas.End();
 
-            _canvas.DrawCanvas(canvas);
+            _canvas.DrawCanvas(canvas, new Rectangle<int>(100, 100, 150, 120), true);
 
             canvas.Dispose();
         }
         _canvas.End();
 
-        DrawCanvas(_canvas);
-    }
-
-    private static void DrawCanvas(Canvas canvas)
-    {
-        _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
-
-        _gl.EnableVertexAttribArray(_positionAttrib);
-        _gl.EnableVertexAttribArray(_texCoordAttrib);
-
-        _shaderProgram.Enable();
-
-        Matrix4x4 projection = Matrix4x4.CreateOrthographicOffCenter(0.0f, _width, _height, 0.0f, -1.0f, 1.0f);
-
-        _gl.UniformMatrix4(_shaderProgram.GetUniformLocation("projection"), 1, false, (float*)&projection);
-
-        _gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
-        _gl.VertexAttribPointer(_positionAttrib, 3, GLEnum.Float, false, 0, null);
-
-        _gl.BindBuffer(GLEnum.ArrayBuffer, canvas.TexCoordBuffer);
-        _gl.VertexAttribPointer(_texCoordAttrib, 2, GLEnum.Float, false, 0, null);
-
-        _gl.ActiveTexture(GLEnum.Texture0);
-        _gl.BindTexture(GLEnum.Texture2D, canvas.Framebuffer.DrawTexture);
-        _gl.Uniform1(_shaderProgram.GetUniformLocation("tex"), 0);
-
-        _gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
-
-        _gl.BindTexture(GLEnum.Texture2D, 0);
-
-        _shaderProgram.Disable();
-
-        _gl.DisableVertexAttribArray(_positionAttrib);
-        _gl.DisableVertexAttribArray(_texCoordAttrib);
+        Canvas.DrawOnWindow(_gl, _shaderProgram, _canvas);
     }
 }
