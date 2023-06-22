@@ -85,6 +85,8 @@ public unsafe static class CanvasDraw
                 canvas.DrawCircle(new PointF(100, 100), 100, Color.Green);
 
                 canvas.DrawLine(new PointF(0, 0), new PointF(200, 200), 2, Color.Azure);
+
+                canvas.DrawString("王先生");
             }
             canvas.End();
 

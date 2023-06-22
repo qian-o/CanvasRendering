@@ -379,6 +379,13 @@ public unsafe class Canvas : IDisposable
         });
     }
 
+    public void DrawString(string text)
+    {
+        Glyph glyph = new(text, 20);
+
+        glyph.Dispose();
+    }
+
     /// <summary>
     /// 回收资源
     /// </summary>
