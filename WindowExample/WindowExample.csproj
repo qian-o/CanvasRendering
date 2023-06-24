@@ -15,4 +15,10 @@
 	  <ProjectReference Include="..\CanvasRendering\CanvasRendering.csproj" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <None Update="Resources\方正FW筑紫古典S黑 简.ttf">
+	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+	  </None>
+	</ItemGroup>
+
 </Project>

@@ -7,6 +7,8 @@ namespace CanvasRendering.Helpers;
 
 public unsafe class Glyph : IDisposable
 {
+    private static readonly byte[] TypefaceBuffer;
+
     private delegate int MoveTo(FT_Vector* to, void* user);
     private delegate int LineTo(FT_Vector* to, void* user);
     private delegate int ConicTo(FT_Vector* control, FT_Vector* to, void* user);
@@ -26,6 +28,11 @@ public unsafe class Glyph : IDisposable
     private LineTo lineTo;
     private ConicTo conicTo;
     private CubicTo cubicTo;
+
+    static Glyph()
+    {
+        TypefaceBuffer = File.ReadAllBytes(@"Resources/方正FW筑紫古典S黑 简.ttf");
+    }
 
     public Glyph(string text, uint size)
     {
@@ -48,38 +55,39 @@ public unsafe class Glyph : IDisposable
 
     private void Initialization()
     {
-        FreeTypeLibrary library = new();
-
-        FT.FT_New_Face(library.Native, @"C:\Users\13247\Desktop\方正FW筑紫古典S黑 简.ttf", 0, out nint aface);
-
-        FT.FT_Set_Pixel_Sizes(aface, _size, 0);
-
-        FT_FaceRec* rec = (FT_FaceRec*)aface;
-
-        FT_Matrix matrix = new()
+        fixed (byte* typeface = TypefaceBuffer)
         {
-            xx = 1 << 16,
-            xy = 0,
-            yx = 0,
-            yy = -1 << 16,
-        };
+            FreeTypeLibrary library = new();
 
-        FT_Vector delta = new()
-        {
-            x = 0,
-            y = rec->max_advance_height
-        };
+            FT.FT_New_Memory_Face(library.Native, (nint)typeface, TypefaceBuffer.Length, 0, out nint aface);
 
-        FT.FT_Set_Transform(aface, (nint)(&matrix), (nint)(&delta));
+            FT.FT_Set_Pixel_Sizes(aface, _size, 0);
 
-        Random random = new();
-        foreach (char c in _text)
-        {
+            FT_FaceRec* rec = (FT_FaceRec*)aface;
 
-            _pairs.Add(c, GetSvg(library, (FT_FaceRec*)aface, c));
+            FT_Matrix matrix = new()
+            {
+                xx = 1 << 16,
+                xy = 0,
+                yx = 0,
+                yy = -1 << 16,
+            };
+
+            FT_Vector delta = new()
+            {
+                x = 0,
+                y = rec->max_advance_height
+            };
+
+            FT.FT_Set_Transform(aface, (nint)(&matrix), (nint)(&delta));
+
+            foreach (char c in _text)
+            {
+                _pairs.Add(c, GetSvg(library, (FT_FaceRec*)aface, c));
+            }
+
+            library.Dispose();
         }
-
-        library.Dispose();
     }
 
     private string GetSvg(FreeTypeLibrary library, FT_FaceRec* aface, char c)
