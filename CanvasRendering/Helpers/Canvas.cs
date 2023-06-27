@@ -350,10 +350,11 @@ public unsafe class Canvas : IDisposable
 
             _gl.BindBuffer(GLEnum.ArrayBuffer, StringBuffer);
 
-            foreach ((float[] vertices, uint vertexCount) in GlyphHelper.GetVboData(text, size, fontPath))
+            _gl.VertexAttribPointer((uint)SolidColorProgram.GetAttribLocation(DefaultVertex.PositionAttrib), 2, GLEnum.Float, false, 0, null);
+
+            foreach ((float[] vertices, uint vertexCount) in GlyphHelper.GetVertices(text, size, fontPath))
             {
-                _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.DynamicDraw);
-                _gl.VertexAttribPointer((uint)SolidColorProgram.GetAttribLocation(DefaultVertex.PositionAttrib), 2, GLEnum.Float, false, 0, null);
+                _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.StreamDraw);
 
                 _gl.DrawArrays(GLEnum.Triangles, 0, vertexCount);
             }

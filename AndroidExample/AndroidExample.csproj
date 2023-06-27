@@ -22,6 +22,12 @@
 	</ItemGroup>
 	
 	<ItemGroup>
+	  <Reference Include="Typography.Library">
+	    <HintPath>Typography.Library.dll</HintPath>
+	  </Reference>
+	</ItemGroup>
+	
+	<ItemGroup>
 	  <AndroidAsset Update="Assets\Founder_FW_S.ttf">
 	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 	  </AndroidAsset>

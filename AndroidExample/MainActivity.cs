@@ -18,6 +18,7 @@ public class MainActivity : SilkActivity
             using Stream s = Assets.Open(path);
             using MemoryStream ms = new();
             s.CopyTo(ms);
+
             return new MemoryStream(ms.ToArray());
         });
         CanvasDraw.FontPath = @"Founder_FW_S.ttf";

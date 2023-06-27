@@ -16,10 +16,11 @@ public unsafe class GlyphHelper
 
     static GlyphHelper()
     {
+        _simpleCurveFlattener.IncrementalStep = 7;
         _translatorToPath.SetOutput(_writablePath, null);
     }
 
-    public static List<(float[] Vertices, uint VertexCount)> GetVboData(string text, uint size, string fontPath)
+    public static List<(float[] Vertices, uint VertexCount)> GetVertices(string text, uint size, string fontPath)
     {
         if (!_typefaceCache.TryGetValue(fontPath, out Typeface typeface))
         {
@@ -46,9 +47,6 @@ public unsafe class GlyphHelper
 
                 _glyphCache.Add(item.glyphIndex, glyph);
             }
-
-            float width = glyph.MaxX - glyph.MinX;
-            float height = glyph.MaxY - glyph.MinY;
 
             Matrix3x3 matrix = new();
             matrix.Transform(x * scale, typeface.Bounds.YMax * scale);
