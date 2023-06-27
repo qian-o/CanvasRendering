@@ -1,4 +1,5 @@
 ﻿using CanvasRendering;
+using CanvasRendering.Helpers;
 using Silk.NET.Maths;
 using Silk.NET.OpenGLES;
 using Silk.NET.Windowing;
@@ -14,6 +15,9 @@ public class Program
     static void Main(string[] args)
     {
         _ = args;
+
+        FileManager.SetLoadFileDelegate(File.OpenRead);
+        CanvasDraw.FontPath = @"Resources/方正FW筑紫古典S黑 简.ttf";
 
         WindowOptions options = WindowOptions.Default;
         options.Title = "Texture Rendering";

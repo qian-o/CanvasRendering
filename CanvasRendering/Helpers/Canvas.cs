@@ -379,9 +379,9 @@ public unsafe class Canvas : IDisposable
         });
     }
 
-    public void DrawString(PointF point, string text, Color color)
+    public void DrawString(PointF point, string text, uint size, Color color, string fontPath)
     {
-        string path = GlyphHelper.GetSvgPath(text, 20, @"Resources/方正FW筑紫古典S黑 简.ttf");
+        string path = GlyphHelper.GetSvgPath(text, size, fontPath);
     }
 
     /// <summary>

@@ -1,4 +1,5 @@
 using CanvasRendering;
+using CanvasRendering.Helpers;
 using Silk.NET.OpenGLES;
 using Silk.NET.Windowing;
 using Silk.NET.Windowing.Sdl.Android;
@@ -12,6 +13,15 @@ public class MainActivity : SilkActivity
 
     protected override void OnRun()
     {
+        FileManager.SetLoadFileDelegate((path) =>
+        {
+            using Stream s = Assets.Open(path);
+            using MemoryStream ms = new();
+            s.CopyTo(ms);
+            return new MemoryStream(ms.ToArray());
+        });
+        CanvasDraw.FontPath = @"·½ÕýFWÖþ×Ï¹ÅµäSºÚ ¼ò.ttf";
+
         ViewOptions options = ViewOptions.Default;
         options.API = new GraphicsAPI(ContextAPI.OpenGLES, new APIVersion(3, 2));
         view = Silk.NET.Windowing.Window.GetView(options);

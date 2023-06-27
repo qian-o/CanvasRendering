@@ -13,7 +13,7 @@ public unsafe class GlyphHelper
     {
         if (!_cache.TryGetValue(fontPath, out Typeface typeface))
         {
-            typeface = new OpenFontReader().Read(File.OpenRead(fontPath));
+            typeface = new OpenFontReader().Read(FileManager.LoadFile(fontPath));
 
             _cache.Add(fontPath, typeface);
         }
@@ -49,7 +49,7 @@ public unsafe class GlyphHelper
 
             x += item.AdvanceX;
         }
-    
+
         return stringBuilder.ToString();
     }
 }

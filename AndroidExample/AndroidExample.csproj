@@ -9,6 +9,9 @@
 		<ApplicationVersion>1</ApplicationVersion>
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 	</PropertyGroup>
+	<ItemGroup>
+	  <None Remove="Assets\方正FW筑紫古典S黑 简.ttf" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="Silk.NET.Windowing" Version="2.17.1" />
@@ -16,5 +19,11 @@
 	
 	<ItemGroup>
 		<ProjectReference Include="..\CanvasRendering\CanvasRendering.csproj" />
+	</ItemGroup>
+	
+	<ItemGroup>
+	  <AndroidAsset Update="Assets\方正FW筑紫古典S黑 简.ttf">
+	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+	  </AndroidAsset>
 	</ItemGroup>
 </Project>

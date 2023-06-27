@@ -16,6 +16,8 @@ public unsafe static class CanvasDraw
     private static Canvas _canvas;
     private static Stopwatch _stopwatch;
 
+    public static string FontPath { get; set; }
+
     public static void Load(GL gl, int width, int height)
     {
         _gl = gl;
@@ -86,7 +88,7 @@ public unsafe static class CanvasDraw
 
                 canvas.DrawLine(new PointF(0, 0), new PointF(200, 200), 2, Color.Azure);
 
-                canvas.DrawString("王先生");
+                canvas.DrawString(new PointF(10, 10), "王先生", 40, Color.Red, FontPath);
             }
             canvas.End();
 
