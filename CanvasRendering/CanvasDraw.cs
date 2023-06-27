@@ -15,8 +15,11 @@ public unsafe static class CanvasDraw
     private static int _width, _height;
     private static Canvas _canvas;
     private static Stopwatch _stopwatch;
+    private static readonly List<int> _fpsSample = new();
 
     public static string FontPath { get; set; }
+
+    public static int Fps { get; set; }
 
     public static void Load(GL gl, int width, int height)
     {
@@ -94,10 +97,23 @@ public unsafe static class CanvasDraw
 
             canvas.Dispose();
 
-            _canvas.DrawString(new Point(10, 10), "王  先生123123ASD ASD ASDF ASD ASDF ", 40, Color.Red, FontPath);
+            _canvas.DrawString(new Point(10, 10), "王先生123123ASD ASD ASDF ASD ASDF ", 40, Color.Red, FontPath);
+            _canvas.DrawString(new Point(10, 50), "王先生123123ASD ASD ASDF ASD ASDF ", 40, Color.Red, FontPath);
+
+            _canvas.DrawRectangle(new RectangleF(0, 0, 80, 80), Color.Black);
+            _canvas.DrawString(new Point(20, 20), Fps.ToString(), 40, Color.Green, FontPath);
         }
         _canvas.End();
 
         Canvas.DrawOnWindow(_gl, _shaderProgram, _canvas);
+
+        if (_fpsSample.Count == 30)
+        {
+            Fps = Convert.ToInt32(_fpsSample.Average());
+
+            _fpsSample.Clear();
+        }
+
+        _fpsSample.Add(Convert.ToInt32(1 / obj));
     }
 }

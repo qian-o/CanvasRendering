@@ -20,7 +20,7 @@ public class MainActivity : SilkActivity
             s.CopyTo(ms);
             return new MemoryStream(ms.ToArray());
         });
-        CanvasDraw.FontPath = @"·½ÕýFWÖþ×Ï¹ÅµäSºÚ ¼ò.ttf";
+        CanvasDraw.FontPath = @"Founder_FW_S.ttf";
 
         ViewOptions options = ViewOptions.Default;
         options.API = new GraphicsAPI(ContextAPI.OpenGLES, new APIVersion(3, 2));

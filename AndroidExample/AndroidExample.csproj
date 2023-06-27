@@ -10,7 +10,7 @@
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 	</PropertyGroup>
 	<ItemGroup>
-	  <None Remove="Assets\方正FW筑紫古典S黑 简.ttf" />
+	  <None Remove="Assets\Founder_FW_S.ttf" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -22,7 +22,7 @@
 	</ItemGroup>
 	
 	<ItemGroup>
-	  <AndroidAsset Update="Assets\方正FW筑紫古典S黑 简.ttf">
+	  <AndroidAsset Update="Assets\Founder_FW_S.ttf">
 	    <CopyToOutputDirectory>Never</CopyToOutputDirectory>
 	  </AndroidAsset>
 	</ItemGroup>

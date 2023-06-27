@@ -69,6 +69,11 @@ public unsafe class Canvas : IDisposable
     public uint LineBuffer { get; private set; }
 
     /// <summary>
+    /// 字符串坐标缓冲区
+    /// </summary>
+    public uint StringBuffer { get; private set; }
+
+    /// <summary>
     /// 纯色着色器程序
     /// </summary>
     public ShaderProgram SolidColorProgram { get; private set; }
@@ -147,6 +152,11 @@ public unsafe class Canvas : IDisposable
             _gl.BindBuffer(GLEnum.ArrayBuffer, LineBuffer);
             _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.DynamicDraw);
             _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
+        }
+
+        // 字符串坐标系
+        {
+            StringBuffer = _gl.GenBuffer();
         }
 
         // SolidColorProgram
@@ -338,20 +348,17 @@ public unsafe class Canvas : IDisposable
 
             _gl.Uniform4(SolidColorProgram.GetUniformLocation(SolidColorFragment.SolidColorUniform), color.ToVector4());
 
+            _gl.BindBuffer(GLEnum.ArrayBuffer, StringBuffer);
+
             foreach ((float[] vertices, uint vertexCount) in GlyphHelper.GetVboData(text, size, fontPath))
             {
-                uint vbo = _gl.GenBuffer();
-                _gl.BindBuffer(GLEnum.ArrayBuffer, vbo);
-                _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.StaticDraw);
+                _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.DynamicDraw);
                 _gl.VertexAttribPointer((uint)SolidColorProgram.GetAttribLocation(DefaultVertex.PositionAttrib), 2, GLEnum.Float, false, 0, null);
 
-                _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-
                 _gl.DrawArrays(GLEnum.Triangles, 0, vertexCount);
-
-                _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-                _gl.DeleteBuffer(vbo);
             }
+
+            _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
 
             _gl.Viewport(0, 0, Size.X, Size.Y);
         });

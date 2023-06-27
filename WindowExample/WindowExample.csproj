@@ -16,7 +16,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <None Update="Resources\方正FW筑紫古典S黑 简.ttf">
+	  <None Update="Resources\Founder_FW_S.ttf">
 	    <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 	  </None>
 	</ItemGroup>
