@@ -87,14 +87,14 @@ public unsafe static class CanvasDraw
                 canvas.DrawCircle(new PointF(100, 100), 100, Color.Green);
 
                 canvas.DrawLine(new PointF(0, 0), new PointF(200, 200), 2, Color.Azure);
-
-                canvas.DrawString(new PointF(10, 10), "王先生", 40, Color.Red, FontPath);
             }
             canvas.End();
 
             _canvas.DrawCanvas(canvas, new Rectangle<int>(100, 100, 150, 120), true);
 
             canvas.Dispose();
+
+            _canvas.DrawString(new Point(10, 10), "王  先生123123ASD ASD ASDF ASD ASDF ", 40, Color.Red, FontPath);
         }
         _canvas.End();
 

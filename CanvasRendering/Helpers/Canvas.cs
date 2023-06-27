@@ -141,7 +141,7 @@ public unsafe class Canvas : IDisposable
 
         // 线段坐标系
         {
-            float[] vertices = new float[12];
+            float[] vertices = new float[6];
 
             LineBuffer = _gl.GenBuffer();
             _gl.BindBuffer(GLEnum.ArrayBuffer, LineBuffer);
@@ -300,29 +300,15 @@ public unsafe class Canvas : IDisposable
         {
             _gl.Uniform4(SolidColorProgram.GetUniformLocation(SolidColorFragment.SolidColorUniform), color.ToVector4());
 
-            float[] vertices = new float[12];
+            float[] vertices = new float[6];
 
-            float dx = end.X - start.X;
-            float dy = end.Y - start.Y;
-            float length = MathF.Sqrt(dx * dx + dy * dy);
-            float nx = dy / length;
-            float ny = -dx / length;
-
-            vertices[0] = start.X + nx * width / 2;
-            vertices[1] = start.Y + ny * width / 2;
+            vertices[0] = start.X;
+            vertices[1] = start.Y;
             vertices[2] = 0.0f;
 
-            vertices[3] = start.X - nx * width / 2;
-            vertices[4] = start.Y - ny * width / 2;
+            vertices[3] = end.X;
+            vertices[4] = end.Y;
             vertices[5] = 0.0f;
-
-            vertices[6] = end.X + nx * width / 2;
-            vertices[7] = end.Y + ny * width / 2;
-            vertices[8] = 0.0f;
-
-            vertices[9] = end.X - nx * width / 2;
-            vertices[10] = end.Y - ny * width / 2;
-            vertices[11] = 0.0f;
 
             _gl.BindBuffer(GLEnum.ArrayBuffer, LineBuffer);
 
@@ -331,7 +317,43 @@ public unsafe class Canvas : IDisposable
 
             _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
 
-            _gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
+            _gl.LineWidth(width);
+            _gl.DrawArrays(GLEnum.Lines, 0, 2);
+        });
+    }
+
+    /// <summary>
+    /// 绘制字符串
+    /// </summary>
+    /// <param name="point">起始点</param>
+    /// <param name="text">字符串</param>
+    /// <param name="size">字体大小</param>
+    /// <param name="color">颜色</param>
+    /// <param name="fontPath">字体文件</param>
+    public void DrawString(Point point, string text, uint size, Color color, string fontPath)
+    {
+        Draw(SolidColorProgram, () =>
+        {
+            _gl.Viewport(point.X, point.Y, Size.X, Size.Y);
+
+            _gl.Uniform4(SolidColorProgram.GetUniformLocation(SolidColorFragment.SolidColorUniform), color.ToVector4());
+
+            foreach ((float[] vertices, uint vertexCount) in GlyphHelper.GetVboData(text, size, fontPath))
+            {
+                uint vbo = _gl.GenBuffer();
+                _gl.BindBuffer(GLEnum.ArrayBuffer, vbo);
+                _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.StaticDraw);
+                _gl.VertexAttribPointer((uint)SolidColorProgram.GetAttribLocation(DefaultVertex.PositionAttrib), 2, GLEnum.Float, false, 0, null);
+
+                _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
+
+                _gl.DrawArrays(GLEnum.Triangles, 0, vertexCount);
+
+                _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
+                _gl.DeleteBuffer(vbo);
+            }
+
+            _gl.Viewport(0, 0, Size.X, Size.Y);
         });
     }
 
@@ -377,11 +399,6 @@ public unsafe class Canvas : IDisposable
 
             _gl.Disable(GLEnum.ScissorTest);
         });
-    }
-
-    public void DrawString(PointF point, string text, uint size, Color color, string fontPath)
-    {
-        string path = GlyphHelper.GetSvgPath(text, size, fontPath);
     }
 
     /// <summary>

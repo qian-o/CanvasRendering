@@ -9,7 +9,7 @@ public unsafe class GlyphHelper
 {
     private static readonly Dictionary<string, Typeface> _cache = new();
 
-    public static string GetSvgPath(string text, uint size, string fontPath)
+    public static List<(float[] Vertices, uint VertexCount)> GetVboData(string text, uint size, string fontPath)
     {
         if (!_cache.TryGetValue(fontPath, out Typeface typeface))
         {
@@ -26,7 +26,14 @@ public unsafe class GlyphHelper
         };
         glyphLayout.Layout(text.ToArray(), 0, text.Length);
 
-        StringBuilder stringBuilder = new();
+        List<(float[], uint)> data = new();
+
+        GlyphTranslatorToPath translatorToPath = new();
+        WritablePath writablePath = new();
+        SimpleCurveFlattener simpleCurveFlattener = new();
+        TessTool tessTool = new();
+
+        translatorToPath.SetOutput(writablePath);
 
         float x = 0;
         foreach (UnscaledGlyphPlan item in glyphLayout.GetUnscaledGlyphPlanIter())
@@ -41,15 +48,17 @@ public unsafe class GlyphHelper
             matrix.Scale(1.0f, -1.0f, 0.5f, 0.5f);
             matrix.Scale(scale, scale, 0.5f, 0.5f);
 
-            GlyphTranslatorToPath translatorToPath = new();
             translatorToPath.Read(glyph.GlyphPoints, glyph.EndPoints, matrix);
-
-            stringBuilder.Append(translatorToPath.Path);
-            stringBuilder.Append(' ');
 
             x += item.AdvanceX;
         }
 
-        return stringBuilder.ToString();
+        float[] flattenPoints = simpleCurveFlattener.Flatten(writablePath.Points, out int[] endContours)!;
+
+        float[] tessData = tessTool.TessAsTriVertexArray(flattenPoints, endContours, out int vertexCount);
+
+        data.Add((tessData, (uint)vertexCount));
+
+        return data;
     }
 }
