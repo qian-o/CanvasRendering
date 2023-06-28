@@ -99,6 +99,7 @@ public unsafe static class CanvasDraw
 
             _canvas.DrawString(new Point(10, 10), "王先生123123ASD ASD ASDF ASD ASDF ", 40, Color.Red, FontPath);
             _canvas.DrawString(new Point(10, 50), "王先生123123ASD ASD ASDF ASD ASDF ", 40, Color.Red, FontPath);
+            _canvas.DrawString(new Point(10, 50), "熙", 400, Color.Red, FontPath);
 
             _canvas.DrawRectangle(new RectangleF(0, 0, 80, 80), Color.Black);
             _canvas.DrawString(new Point(20, 20), Fps.ToString(), 40, Color.Green, FontPath);
