@@ -1,4 +1,5 @@
-﻿using CanvasRendering.Shaders;
+﻿using CanvasRendering.Contracts;
+using CanvasRendering.Shaders;
 using Silk.NET.Maths;
 using Silk.NET.OpenGLES;
 using System.Drawing;
@@ -6,7 +7,7 @@ using System.Numerics;
 
 namespace CanvasRendering.Helpers;
 
-public unsafe class Canvas : IDisposable
+public unsafe class GLCanvas : ICanvas
 {
     private readonly uint CirclePoints = 120;
 
@@ -83,7 +84,7 @@ public unsafe class Canvas : IDisposable
     /// </summary>
     public ShaderProgram TextureProgram { get; private set; }
 
-    public Canvas(GL gl, ShaderHelper shaderHelper, Vector2D<uint> size)
+    public GLCanvas(GL gl, ShaderHelper shaderHelper, Vector2D<uint> size)
     {
         _gl = gl;
         _shaderHelper = shaderHelper;
@@ -369,44 +370,47 @@ public unsafe class Canvas : IDisposable
     /// 绘制画板
     /// </summary>
     /// <param name="canvas">画板</param>
-    public void DrawCanvas(Canvas canvas, Rectangle<int> rectangle, bool clipToBounds)
+    public void DrawCanvas(ICanvas canvas, Rectangle<int> rectangle, bool clipToBounds)
     {
-        Draw(TextureProgram, () =>
+        if (canvas is GLCanvas realityCanvas)
         {
-            uint width, height;
-            if (clipToBounds)
+            Draw(TextureProgram, () =>
             {
-                width = (uint)rectangle.Size.X;
-                height = (uint)rectangle.Size.Y;
-            }
-            else
-            {
-                width = canvas.Size.X;
-                height = canvas.Size.Y;
-            }
+                uint width, height;
+                if (clipToBounds)
+                {
+                    width = (uint)rectangle.Size.X;
+                    height = (uint)rectangle.Size.Y;
+                }
+                else
+                {
+                    width = realityCanvas.Size.X;
+                    height = realityCanvas.Size.Y;
+                }
 
-            _gl.Enable(GLEnum.ScissorTest);
+                _gl.Enable(GLEnum.ScissorTest);
 
-            _gl.Scissor(rectangle.Origin.X, rectangle.Origin.X, width, height);
+                _gl.Scissor(rectangle.Origin.X, rectangle.Origin.X, width, height);
 
-            canvas.UpdateVertexBuffer(new Rectangle<float>(rectangle.Origin.X, rectangle.Origin.Y, canvas.Size.X, canvas.Size.Y));
+                realityCanvas.UpdateVertexBuffer(new Rectangle<float>(rectangle.Origin.X, rectangle.Origin.Y, realityCanvas.Size.X, realityCanvas.Size.Y));
 
-            _gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
-            _gl.VertexAttribPointer((uint)TextureProgram.GetAttribLocation(DefaultVertex.PositionAttrib), 3, GLEnum.Float, false, 0, null);
+                _gl.BindBuffer(GLEnum.ArrayBuffer, realityCanvas.VertexBuffer);
+                _gl.VertexAttribPointer((uint)TextureProgram.GetAttribLocation(DefaultVertex.PositionAttrib), 3, GLEnum.Float, false, 0, null);
 
-            _gl.BindBuffer(GLEnum.ArrayBuffer, canvas.TexCoordBuffer);
-            _gl.VertexAttribPointer((uint)TextureProgram.GetAttribLocation(DefaultVertex.TexCoordAttrib), 2, GLEnum.Float, false, 0, null);
+                _gl.BindBuffer(GLEnum.ArrayBuffer, realityCanvas.TexCoordBuffer);
+                _gl.VertexAttribPointer((uint)TextureProgram.GetAttribLocation(DefaultVertex.TexCoordAttrib), 2, GLEnum.Float, false, 0, null);
 
-            _gl.ActiveTexture(GLEnum.Texture0);
-            _gl.BindTexture(GLEnum.Texture2D, canvas.Framebuffer.DrawTexture);
-            _gl.Uniform1(TextureProgram.GetUniformLocation(TextureFragment.TexUniform), 0);
+                _gl.ActiveTexture(GLEnum.Texture0);
+                _gl.BindTexture(GLEnum.Texture2D, realityCanvas.Framebuffer.DrawTexture);
+                _gl.Uniform1(TextureProgram.GetUniformLocation(TextureFragment.TexUniform), 0);
 
-            _gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
+                _gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
 
-            _gl.BindTexture(GLEnum.Texture2D, 0);
+                _gl.BindTexture(GLEnum.Texture2D, 0);
 
-            _gl.Disable(GLEnum.ScissorTest);
-        });
+                _gl.Disable(GLEnum.ScissorTest);
+            });
+        }
     }
 
     /// <summary>
@@ -500,7 +504,7 @@ public unsafe class Canvas : IDisposable
     /// <param name="gl">gl上下文</param>
     /// <param name="textureProgram">纹理着色器程序</param>
     /// <param name="canvas">画板</param>
-    public static void DrawOnWindow(GL gl, ShaderProgram textureProgram, Canvas canvas)
+    public static void DrawOnWindow(GL gl, ShaderProgram textureProgram, GLCanvas canvas)
     {
         uint positionAttrib = (uint)textureProgram.GetAttribLocation(DefaultVertex.PositionAttrib);
         uint texCoordAttrib = (uint)textureProgram.GetAttribLocation(DefaultVertex.TexCoordAttrib);
