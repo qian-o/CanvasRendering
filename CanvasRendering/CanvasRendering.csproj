@@ -21,10 +21,4 @@
 		<PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="2.88.3" Condition="'$(TargetFramework)' == 'net7.0'" />
 	</ItemGroup>
 
-	<ItemGroup>
-		<Reference Include="Typography.Library">
-			<HintPath>Typography.Library.dll</HintPath>
-		</Reference>
-	</ItemGroup>
-
 </Project>
