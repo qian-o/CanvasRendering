@@ -1,4 +1,5 @@
-﻿using CanvasRendering.Helpers;
+﻿using CanvasRendering.Contracts;
+using CanvasRendering.Helpers;
 using Silk.NET.Maths;
 using Silk.NET.OpenGLES;
 using System.Diagnostics;
@@ -13,7 +14,7 @@ public unsafe static class CanvasDraw
     private static ShaderHelper _shaderHelper;
     private static ShaderProgram _shaderProgram;
     private static int _width, _height;
-    private static Canvas _canvas;
+    private static ICanvas _canvas;
     private static Stopwatch _stopwatch;
     private static readonly List<int> _fpsSample = new();
 
@@ -35,7 +36,7 @@ public unsafe static class CanvasDraw
         _width = width;
         _height = height;
 
-        _canvas = new(_gl, _shaderHelper, new Vector2D<uint>((uint)width, (uint)height));
+        _canvas = new GLCanvas(_gl, _shaderHelper, new Vector2D<uint>((uint)width, (uint)height));
         _stopwatch = Stopwatch.StartNew();
     }
 
@@ -47,7 +48,7 @@ public unsafe static class CanvasDraw
         _gl.Viewport(0, 0, (uint)_width, (uint)_height);
 
         _canvas?.Dispose();
-        _canvas = new(_gl, _shaderHelper, new Vector2D<uint>((uint)_width, (uint)_height));
+        _canvas = new GLCanvas(_gl, _shaderHelper, new Vector2D<uint>((uint)_width, (uint)_height));
     }
 
     public static void Render(double obj)
@@ -80,7 +81,7 @@ public unsafe static class CanvasDraw
                 }
             }
 
-            Canvas canvas = new(_gl, _shaderHelper, new Vector2D<uint>(200, 200));
+            GLCanvas canvas = new(_gl, _shaderHelper, new Vector2D<uint>(200, 200));
             canvas.Begin();
             {
                 canvas.Clear();
@@ -106,7 +107,7 @@ public unsafe static class CanvasDraw
         }
         _canvas.End();
 
-        Canvas.DrawOnWindow(_gl, _shaderProgram, _canvas);
+        GLCanvas.DrawOnWindow(_gl, _shaderProgram, (GLCanvas)_canvas);
 
         if (_fpsSample.Count == 30)
         {

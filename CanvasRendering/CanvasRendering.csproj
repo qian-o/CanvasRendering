@@ -7,7 +7,7 @@
 		<Nullable>disable</Nullable>
 		<AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 		<Platforms>AnyCPU</Platforms>
-		
+
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">30.0</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'ios'">13.6</SupportedOSPlatformVersion>
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'maccatalyst'">13.5</SupportedOSPlatformVersion>
