@@ -59,12 +59,12 @@ public unsafe static class CanvasDraw
         {
             _canvas.Clear();
 
-            float wSum = (float)_width / 40;
-            float hSum = (float)_height / 40;
+            float wSum = (float)_width / 20;
+            float hSum = (float)_height / 20;
 
-            for (int i = 0; i < 40; i++)
+            for (int i = 0; i < 20; i++)
             {
-                for (int j = 0; j < 40; j++)
+                for (int j = 0; j < 20; j++)
                 {
                     _canvas.DrawLine(new PointF(wSum * i, hSum * j), new PointF(wSum * i, hSum * j + hSum), 1, Color.Black);
                     _canvas.DrawLine(new PointF(wSum * i, hSum * j + hSum), new PointF(wSum * i + wSum, hSum * j + hSum), 1, Color.Black);

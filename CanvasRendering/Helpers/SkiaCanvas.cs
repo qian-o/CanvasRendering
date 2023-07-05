@@ -3,7 +3,6 @@ using CanvasRendering.Shaders;
 using Silk.NET.Maths;
 using Silk.NET.OpenGLES;
 using SkiaSharp;
-using System;
 using System.Drawing;
 using System.Numerics;
 
@@ -11,6 +10,8 @@ namespace CanvasRendering.Helpers;
 
 public unsafe class SkiaCanvas : ICanvas
 {
+    private static readonly Dictionary<string, SKTypeface> _typeface = new();
+
     private readonly GL _gl;
     private readonly Vector2D<uint> Size;
 
@@ -26,7 +27,6 @@ public unsafe class SkiaCanvas : ICanvas
     public uint DrawTexture { get; private set; }
 
     public SKSurface Surface { get; private set; }
-    public uint BufferData { get; private set; }
 
     public SkiaCanvas(GL gl, Vector2D<uint> size)
     {
@@ -53,7 +53,7 @@ public unsafe class SkiaCanvas : ICanvas
 
     public void DrawRectangle(RectangleF rectangle, Color color)
     {
-        using SKPaint paint = new() { IsAntialias = true, IsDither = true, FilterQuality = SKFilterQuality.High };
+        SKPaint paint = SKPaintHelper.GetDefaultPaint();
         paint.ColorF = new SKColor(color.R, color.G, color.B, color.A);
 
         Surface.Canvas.DrawRect(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, paint);
@@ -61,7 +61,7 @@ public unsafe class SkiaCanvas : ICanvas
 
     public void DrawCircle(PointF origin, float radius, Color color)
     {
-        using SKPaint paint = new() { IsAntialias = true, IsDither = true, FilterQuality = SKFilterQuality.High };
+        SKPaint paint = SKPaintHelper.GetDefaultPaint();
         paint.ColorF = new SKColor(color.R, color.G, color.B, color.A);
 
         Surface.Canvas.DrawCircle(origin.X, origin.Y, radius, paint);
@@ -69,7 +69,7 @@ public unsafe class SkiaCanvas : ICanvas
 
     public void DrawLine(PointF start, PointF end, float width, Color color)
     {
-        using SKPaint paint = new() { IsAntialias = true, IsDither = true, FilterQuality = SKFilterQuality.High };
+        SKPaint paint = SKPaintHelper.GetDefaultPaint();
         paint.ColorF = new SKColor(color.R, color.G, color.B, color.A);
         paint.StrokeWidth = width;
 
@@ -78,10 +78,16 @@ public unsafe class SkiaCanvas : ICanvas
 
     public void DrawString(Point point, string text, uint size, Color color, string fontPath)
     {
-        using SKPaint paint = new() { IsAntialias = true, IsDither = true, FilterQuality = SKFilterQuality.High };
+        SKPaint paint = SKPaintHelper.GetDefaultPaint();
         paint.ColorF = new SKColor(color.R, color.G, color.B, color.A);
         paint.TextSize = size;
-        paint.Typeface = SKTypeface.FromFile(fontPath);
+        if (!_typeface.TryGetValue(fontPath, out SKTypeface typeface))
+        {
+            typeface = SKTypeface.FromStream(FileManager.LoadFile(fontPath));
+
+            _typeface.Add(fontPath, typeface);
+        }
+        paint.Typeface = typeface;
 
         Surface.Canvas.DrawText(text, point.X, point.Y, paint);
     }
@@ -93,14 +99,15 @@ public unsafe class SkiaCanvas : ICanvas
             throw new ArgumentException("canvas must be SkiaCanvas");
         }
 
-        using SKPaint paint = new() { IsAntialias = true, IsDither = true, FilterQuality = SKFilterQuality.High };
+        SKPaint paint = SKPaintHelper.GetDefaultPaint();
         paint.ColorF = new SKColor(255, 255, 255, 255);
 
         if (clipToBounds)
         {
+            using SKImage image = skiaCanvas.Surface.Snapshot();
             Surface.Canvas.Save();
             Surface.Canvas.ClipRect(new SKRect(rectangle.Origin.X, rectangle.Origin.Y, rectangle.Max.X, rectangle.Max.Y));
-            Surface.Canvas.DrawImage(skiaCanvas.Surface.Snapshot(), rectangle.Origin.X, rectangle.Origin.Y, paint);
+            Surface.Canvas.DrawImage(image, rectangle.Origin.X, rectangle.Origin.Y, paint);
             Surface.Canvas.Restore();
         }
         else
@@ -126,7 +133,9 @@ public unsafe class SkiaCanvas : ICanvas
         _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(vertices.Length * sizeof(float)), vertices);
         _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
 
-        ReadOnlySpan<byte> bytes = Surface.Snapshot().PeekPixels().GetPixelSpan();
+        using SKImage image = Surface.Snapshot();
+        using SKPixmap pixmap = image.PeekPixels();
+        ReadOnlySpan<byte> bytes = pixmap.GetPixelSpan();
         fixed (void* p = bytes)
         {
             _gl.BindTexture(GLEnum.Texture2D, DrawTexture);
@@ -177,7 +186,10 @@ public unsafe class SkiaCanvas : ICanvas
 
     public void Dispose()
     {
+        _gl.DeleteBuffer(VertexBuffer);
+        _gl.DeleteBuffer(TexCoordBuffer);
         _gl.DeleteTexture(DrawTexture);
+
         Surface.Dispose();
 
         GC.SuppressFinalize(this);
