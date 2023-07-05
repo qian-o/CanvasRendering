@@ -59,12 +59,12 @@ public unsafe static class CanvasDraw
         {
             _canvas.Clear();
 
-            float wSum = (float)_width / 10;
-            float hSum = (float)_height / 10;
+            float wSum = (float)_width / 40;
+            float hSum = (float)_height / 40;
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < 40; i++)
             {
-                for (int j = 0; j < 10; j++)
+                for (int j = 0; j < 40; j++)
                 {
                     _canvas.DrawLine(new PointF(wSum * i, hSum * j), new PointF(wSum * i, hSum * j + hSum), 1, Color.Black);
                     _canvas.DrawLine(new PointF(wSum * i, hSum * j + hSum), new PointF(wSum * i + wSum, hSum * j + hSum), 1, Color.Black);
@@ -98,12 +98,12 @@ public unsafe static class CanvasDraw
 
             canvas.Dispose();
 
-            _canvas.DrawString(new Point(10, 10), "王先生123123ASD ASD ASDF ASD ASDF ", 40, Color.Red, FontPath);
-            _canvas.DrawString(new Point(10, 50), "王先生123123ASD ASD ASDF ASD ASDF ", 40, Color.Red, FontPath);
-            _canvas.DrawString(new Point(10, 50), "熙", 400, Color.Red, FontPath);
+            _canvas.DrawString(new Point(10, 40), "王先生123123ASD ASD ASDF ASD ASDF ", 40, Color.Red, FontPath);
+            _canvas.DrawString(new Point(10, 80), "王先生123123ASD ASD ASDF ASD ASDF ", 40, Color.Red, FontPath);
+            _canvas.DrawString(new Point(10, 450), "熙", 400, Color.Red, FontPath);
 
             _canvas.DrawRectangle(new RectangleF(0, 0, 80, 80), Color.Black);
-            _canvas.DrawString(new Point(20, 20), Fps.ToString(), 40, Color.Green, FontPath);
+            _canvas.DrawString(new Point(20, 60), Fps.ToString(), 40, Color.Green, FontPath);
         }
         _canvas.End();
 

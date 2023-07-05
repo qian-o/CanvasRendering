@@ -43,8 +43,6 @@ public unsafe class SkiaCanvas : ICanvas
 
     public void End()
     {
-        Surface.Canvas.Flush();
-
         IsDrawing = false;
     }
 
@@ -85,11 +83,7 @@ public unsafe class SkiaCanvas : ICanvas
         paint.TextSize = size;
         paint.Typeface = SKTypeface.FromFile(fontPath);
 
-        // 获取文字的宽度和高度
-        float textWidth = paint.MeasureText(text);
-        float textHeight = paint.TextSize;
-
-        Surface.Canvas.DrawText(text, point.X, point.Y + textHeight, paint);
+        Surface.Canvas.DrawText(text, point.X, point.Y, paint);
     }
 
     public void DrawCanvas(ICanvas canvas, Rectangle<int> rectangle, bool clipToBounds)
