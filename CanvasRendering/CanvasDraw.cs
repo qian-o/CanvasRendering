@@ -36,7 +36,7 @@ public unsafe static class CanvasDraw
         _width = width;
         _height = height;
 
-        _canvas = new GLCanvas(_gl, _shaderHelper, new Vector2D<uint>((uint)width, (uint)height));
+        _canvas = new SkiaCanvas(_gl, new Vector2D<uint>((uint)width, (uint)height));
         _stopwatch = Stopwatch.StartNew();
     }
 
@@ -48,7 +48,7 @@ public unsafe static class CanvasDraw
         _gl.Viewport(0, 0, (uint)_width, (uint)_height);
 
         _canvas?.Dispose();
-        _canvas = new GLCanvas(_gl, _shaderHelper, new Vector2D<uint>((uint)_width, (uint)_height));
+        _canvas = new SkiaCanvas(_gl, new Vector2D<uint>((uint)_width, (uint)_height));
     }
 
     public static void Render(double obj)
@@ -81,7 +81,7 @@ public unsafe static class CanvasDraw
                 }
             }
 
-            GLCanvas canvas = new(_gl, _shaderHelper, new Vector2D<uint>(200, 200));
+            SkiaCanvas canvas = new(_gl, new Vector2D<uint>(200, 200));
             canvas.Begin();
             {
                 canvas.Clear();
@@ -107,7 +107,7 @@ public unsafe static class CanvasDraw
         }
         _canvas.End();
 
-        GLCanvas.DrawOnWindow(_gl, _shaderProgram, (GLCanvas)_canvas);
+        SkiaCanvas.DrawOnWindow(_gl, _shaderProgram, (SkiaCanvas)_canvas);
 
         if (_fpsSample.Count == 30)
         {
