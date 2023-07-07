@@ -300,7 +300,7 @@ public unsafe class SkiaCanvas : ICanvas
 
             _gl.Enable(GLEnum.ScissorTest);
 
-            _gl.Scissor(rectangle.Origin.X, rectangle.Origin.X, width, height);
+            _gl.Scissor(rectangle.Origin.X, rectangle.Origin.Y, width, height);
 
             skiaCanvas.UpdateVertexBuffer(new Rectangle<float>(rectangle.Origin.X, rectangle.Origin.Y, skiaCanvas.Size.X, skiaCanvas.Size.Y));
 
