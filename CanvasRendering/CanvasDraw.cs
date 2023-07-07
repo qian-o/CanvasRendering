@@ -2,7 +2,6 @@
 using CanvasRendering.Helpers;
 using Silk.NET.Maths;
 using Silk.NET.OpenGLES;
-using SkiaSharp;
 using System.Diagnostics;
 using System.Drawing;
 using System.Numerics;
@@ -16,6 +15,8 @@ public unsafe static class CanvasDraw
     private static ShaderProgram _shaderProgram;
     private static int _width, _height;
     private static ICanvas _canvas;
+    private static bool _isFirst = true;
+    private static List<ICanvas> _drawElements;
     private static Stopwatch _stopwatch;
     private static readonly List<int> _fpsSample = new();
 
@@ -33,12 +34,18 @@ public unsafe static class CanvasDraw
 
         _shaderProgram = new ShaderProgram(_gl);
         _shaderProgram.Attach(_shaderHelper.GetShader("defaultVertex.vert"), _shaderHelper.GetShader("texture.frag"));
-        
+
         _width = width;
         _height = height;
 
         _canvas = new SkiaCanvas(_gl, _shaderHelper, new Vector2D<uint>((uint)width, (uint)height));
         _stopwatch = Stopwatch.StartNew();
+
+        _drawElements = new();
+        for (int i = 0; i < 100; i++)
+        {
+            _drawElements.Add(new SkiaCanvas(_gl, _shaderHelper, new Vector2D<uint>(200, 200)));
+        }
     }
 
     public static void Resize(Vector2D<int> obj)
@@ -82,22 +89,52 @@ public unsafe static class CanvasDraw
                 }
             }
 
-            ICanvas canvas = new SkiaCanvas(_gl, _shaderHelper, new Vector2D<uint>(200, 200));
-            canvas.Begin();
+            int sumX = 0;
+            int sumY = 0;
+            bool sortBottomRight = true;
+            foreach (ICanvas item in _drawElements)
             {
-                canvas.Clear();
+                if (_isFirst)
+                {
+                    item.Begin();
+                    {
+                        item.Clear();
 
-                canvas.DrawRectangle(new RectangleF(0, 0, 200, 200), Color.Blue);
+                        item.DrawRectangle(new RectangleF(0, 0, 200, 200), Color.Blue);
 
-                canvas.DrawCircle(new PointF(100, 100), 100, Color.Green);
+                        item.DrawCircle(new PointF(100, 100), 100, Color.Green);
 
-                canvas.DrawLine(new PointF(0, 0), new PointF(200, 200), 2, Color.Azure);
+                        item.DrawLine(new PointF(0, 0), new PointF(200, 200), 2, Color.Azure);
+                    }
+                    item.End();
+                }
+
+                int left, top;
+                left = 100 + (sumX * 50);
+                top = 100 + (sumY * 50);
+
+                if (!sortBottomRight && top < 0)
+                {
+                    sortBottomRight = true;
+                }
+                else if (top > _height)
+                {
+                    sortBottomRight = false;
+                }
+
+                _canvas.DrawCanvas(item, new Rectangle<int>(left, top, 150, 120), true);
+
+                sumX++;
+                if (sortBottomRight)
+                {
+                    sumY++;
+                }
+                else
+                {
+                    sumY--;
+                }
             }
-            canvas.End();
-
-            _canvas.DrawCanvas(canvas, new Rectangle<int>(100, 100, 150, 120), true);
-
-            canvas.Dispose();
+            _isFirst = false;
 
             _canvas.DrawString(new Point(10, 40), "王先生123123ASD ASD ASDF ASD ASDF ", 40, Color.Red, FontPath);
             _canvas.DrawString(new Point(10, 80), "王先生123123ASD ASD ASDF ASD ASDF ", 40, Color.Red, FontPath);
