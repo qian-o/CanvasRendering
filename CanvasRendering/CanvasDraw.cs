@@ -16,6 +16,7 @@ public unsafe static class CanvasDraw
     private static ShaderProgram _textureProgram;
     private static int _width, _height;
     private static TestControl1 _c1;
+    private static TestControl1 _c2;
 
     public static string FontPath { get; set; }
 
@@ -43,6 +44,13 @@ public unsafe static class CanvasDraw
             LayoutTransform = Matrix4x4.CreateScale(new Vector3(0.5f, 1, 1)),
             RenderTransform = Matrix4x4.CreateScale(new Vector3(0.5f, 1, 1))
         };
+        _c2 = new TestControl1(_gl)
+        {
+            Left = 600,
+            Top = 100,
+            Width = 400,
+            Height = 400
+        };
     }
 
     public static void Resize(Vector2D<int> obj)
@@ -57,8 +65,13 @@ public unsafe static class CanvasDraw
     {
         _ = obj;
 
+        _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+
         _c1.StartRender();
         _c1.DrawOnWindow(_width, _height, _textureProgram);
+
+        _c2.StartRender();
+        _c2.DrawOnWindow(_width, _height, _textureProgram);
 
         if (fpsSample.Count == 60)
         {
