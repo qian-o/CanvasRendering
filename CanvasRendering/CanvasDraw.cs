@@ -1,4 +1,5 @@
-﻿using CanvasRendering.Helpers;
+﻿using CanvasRendering.Contracts;
+using CanvasRendering.Helpers;
 using Silk.NET.Maths;
 using Silk.NET.OpenGLES;
 using System.Diagnostics;
@@ -13,7 +14,9 @@ public unsafe static class CanvasDraw
     private static ShaderHelper _shaderHelper;
     private static ShaderProgram _shaderProgram;
     private static int _width, _height;
-    private static Canvas _canvas;
+    private static ICanvas _canvas;
+    private static bool _isFirst = true;
+    private static List<ICanvas> _drawElements;
     private static Stopwatch _stopwatch;
     private static readonly List<int> _fpsSample = new();
 
@@ -35,8 +38,14 @@ public unsafe static class CanvasDraw
         _width = width;
         _height = height;
 
-        _canvas = new(_gl, _shaderHelper, new Vector2D<uint>((uint)width, (uint)height));
+        _canvas = new SkiaCanvas(_gl, _shaderHelper, new Vector2D<uint>((uint)width, (uint)height));
         _stopwatch = Stopwatch.StartNew();
+
+        _drawElements = new();
+        for (int i = 0; i < 100; i++)
+        {
+            _drawElements.Add(new SkiaCanvas(_gl, _shaderHelper, new Vector2D<uint>(200, 200)));
+        }
     }
 
     public static void Resize(Vector2D<int> obj)
@@ -47,7 +56,7 @@ public unsafe static class CanvasDraw
         _gl.Viewport(0, 0, (uint)_width, (uint)_height);
 
         _canvas?.Dispose();
-        _canvas = new(_gl, _shaderHelper, new Vector2D<uint>((uint)_width, (uint)_height));
+        _canvas = new SkiaCanvas(_gl, _shaderHelper, new Vector2D<uint>((uint)_width, (uint)_height));
     }
 
     public static void Render(double obj)
@@ -58,12 +67,12 @@ public unsafe static class CanvasDraw
         {
             _canvas.Clear();
 
-            float wSum = (float)_width / 40;
-            float hSum = (float)_height / 40;
+            float wSum = (float)_width / 20;
+            float hSum = (float)_height / 20;
 
-            for (int i = 0; i < 40; i++)
+            for (int i = 0; i < 20; i++)
             {
-                for (int j = 0; j < 40; j++)
+                for (int j = 0; j < 20; j++)
                 {
                     _canvas.DrawLine(new PointF(wSum * i, hSum * j), new PointF(wSum * i, hSum * j + hSum), 1, Color.Black);
                     _canvas.DrawLine(new PointF(wSum * i, hSum * j + hSum), new PointF(wSum * i + wSum, hSum * j + hSum), 1, Color.Black);
@@ -80,33 +89,63 @@ public unsafe static class CanvasDraw
                 }
             }
 
-            Canvas canvas = new(_gl, _shaderHelper, new Vector2D<uint>(200, 200));
-            canvas.Begin();
+            int sumX = 0;
+            int sumY = 0;
+            bool sortBottomRight = true;
+            foreach (ICanvas item in _drawElements)
             {
-                canvas.Clear();
+                if (_isFirst)
+                {
+                    item.Begin();
+                    {
+                        item.Clear();
 
-                canvas.DrawRectangle(new RectangleF(0, 0, 200, 200), Color.Blue);
+                        item.DrawRectangle(new RectangleF(0, 0, 200, 200), Color.Blue);
 
-                canvas.DrawCircle(new PointF(100, 100), 100, Color.Green);
+                        item.DrawCircle(new PointF(100, 100), 100, Color.Green);
 
-                canvas.DrawLine(new PointF(0, 0), new PointF(200, 200), 2, Color.Azure);
+                        item.DrawLine(new PointF(0, 0), new PointF(200, 200), 2, Color.Azure);
+                    }
+                    item.End();
+                }
+
+                int left, top;
+                left = 100 + (sumX * 50);
+                top = 100 + (sumY * 50);
+
+                if (!sortBottomRight && top < 0)
+                {
+                    sortBottomRight = true;
+                }
+                else if (top > _height)
+                {
+                    sortBottomRight = false;
+                }
+
+                _canvas.DrawCanvas(item, new Rectangle<int>(left, top, 150, 120), true);
+
+                sumX++;
+                if (sortBottomRight)
+                {
+                    sumY++;
+                }
+                else
+                {
+                    sumY--;
+                }
             }
-            canvas.End();
+            _isFirst = false;
 
-            _canvas.DrawCanvas(canvas, new Rectangle<int>(100, 100, 150, 120), true);
-
-            canvas.Dispose();
-
-            _canvas.DrawString(new Point(10, 10), "王先生123123ASD ASD ASDF ASD ASDF ", 40, Color.Red, FontPath);
-            _canvas.DrawString(new Point(10, 50), "王先生123123ASD ASD ASDF ASD ASDF ", 40, Color.Red, FontPath);
-            _canvas.DrawString(new Point(10, 50), "熙", 400, Color.Red, FontPath);
+            _canvas.DrawString(new Point(10, 40), "王先生123123ASD ASD ASDF ASD ASDF ", 40, Color.Red, FontPath);
+            _canvas.DrawString(new Point(10, 80), "王先生123123ASD ASD ASDF ASD ASDF ", 40, Color.Red, FontPath);
+            _canvas.DrawString(new Point(10, 450), "熙", 400, Color.Red, FontPath);
 
             _canvas.DrawRectangle(new RectangleF(0, 0, 80, 80), Color.Black);
-            _canvas.DrawString(new Point(20, 20), Fps.ToString(), 40, Color.Green, FontPath);
+            _canvas.DrawString(new Point(20, 60), Fps.ToString(), 40, Color.Green, FontPath);
         }
         _canvas.End();
 
-        Canvas.DrawOnWindow(_gl, _shaderProgram, _canvas);
+        SkiaCanvas.DrawOnWindow(_gl, _shaderProgram, (SkiaCanvas)_canvas);
 
         if (_fpsSample.Count == 30)
         {

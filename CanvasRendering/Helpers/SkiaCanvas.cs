@@ -1,14 +1,16 @@
-﻿using CanvasRendering.Shaders;
+﻿using CanvasRendering.Contracts;
+using CanvasRendering.Shaders;
 using Silk.NET.Maths;
 using Silk.NET.OpenGLES;
+using SkiaSharp;
 using System.Drawing;
 using System.Numerics;
 
 namespace CanvasRendering.Helpers;
 
-public unsafe class Canvas : IDisposable
+public unsafe class SkiaCanvas : ICanvas
 {
-    private readonly uint CirclePoints = 120;
+    private static readonly Dictionary<string, SKTypeface> _typeface = new();
 
     private readonly GL _gl;
     private readonly ShaderHelper _shaderHelper;
@@ -54,36 +56,17 @@ public unsafe class Canvas : IDisposable
     public uint TexCoordBuffer { get; private set; }
 
     /// <summary>
-    /// 矩形坐标缓冲区
-    /// </summary>
-    public uint RectangleBuffer { get; private set; }
-
-    /// <summary>
-    /// 圆形坐标缓冲区
-    /// </summary>
-    public uint CircleBuffer { get; private set; }
-
-    /// <summary>
-    /// 线段坐标缓冲区
-    /// </summary>
-    public uint LineBuffer { get; private set; }
-
-    /// <summary>
-    /// 字符串坐标缓冲区
-    /// </summary>
-    public uint StringBuffer { get; private set; }
-
-    /// <summary>
-    /// 纯色着色器程序
-    /// </summary>
-    public ShaderProgram SolidColorProgram { get; private set; }
-
-    /// <summary>
     /// 纹理着色器程序
     /// </summary>
     public ShaderProgram TextureProgram { get; private set; }
 
-    public Canvas(GL gl, ShaderHelper shaderHelper, Vector2D<uint> size)
+    public GRContext SkiaContext { get; private set; }
+
+    public GRBackendRenderTarget RenderTarget { get; private set; }
+
+    public SKSurface Surface { get; private set; }
+
+    public SkiaCanvas(GL gl, ShaderHelper shaderHelper, Vector2D<uint> size)
     {
         _gl = gl;
         _shaderHelper = shaderHelper;
@@ -124,54 +107,6 @@ public unsafe class Canvas : IDisposable
             _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
         }
 
-        // 矩形坐标系
-        {
-            float[] vertices = new float[12];
-
-            RectangleBuffer = _gl.GenBuffer();
-            _gl.BindBuffer(GLEnum.ArrayBuffer, RectangleBuffer);
-            _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.DynamicDraw);
-            _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-        }
-
-        // 圆形坐标系
-        {
-            float[] vertices = new float[CirclePoints * 3];
-
-            CircleBuffer = _gl.GenBuffer();
-            _gl.BindBuffer(GLEnum.ArrayBuffer, CircleBuffer);
-            _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.DynamicDraw);
-            _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-        }
-
-        // 线段坐标系
-        {
-            float[] vertices = new float[6];
-
-            LineBuffer = _gl.GenBuffer();
-            _gl.BindBuffer(GLEnum.ArrayBuffer, LineBuffer);
-            _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.DynamicDraw);
-            _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-        }
-
-        // 字符串坐标系
-        {
-            StringBuffer = _gl.GenBuffer();
-        }
-
-        // SolidColorProgram
-        {
-            SolidColorProgram = new ShaderProgram(_gl);
-            SolidColorProgram.Attach(_shaderHelper.GetShader(DefaultVertex.Name), _shaderHelper.GetShader(SolidColorFragment.Name));
-
-            SolidColorProgram.Enable();
-
-            Matrix4x4 projectionMatrix = Matrix4x4.CreateOrthographicOffCenter(0.0f, Size.X, 0.0f, Size.Y, -1.0f, 1.0f);
-            _gl.UniformMatrix4(SolidColorProgram.GetUniformLocation(DefaultVertex.ProjectionUniform), 1, false, (float*)&projectionMatrix);
-
-            SolidColorProgram.Disable();
-        }
-
         // TextureProgram
         {
             TextureProgram = new ShaderProgram(_gl);
@@ -184,6 +119,8 @@ public unsafe class Canvas : IDisposable
 
             TextureProgram.Disable();
         }
+
+        SkiaContext = GRContext.CreateGl();
     }
 
     /// <summary>
@@ -201,8 +138,17 @@ public unsafe class Canvas : IDisposable
             RecordPosition = new Vector2D<int>(viewport[0], viewport[1]);
             RecordSize = new Vector2D<uint>((uint)viewport[2], (uint)viewport[3]);
 
-            _gl.BindFramebuffer(GLEnum.Framebuffer, Framebuffer.MultisampleFbo);
+            _gl.BindFramebuffer(GLEnum.Framebuffer, Framebuffer.DrawFbo);
             _gl.Viewport(0, 0, Size.X, Size.Y);
+
+            if (RenderTarget == null)
+            {
+                _gl.GetInteger(GLEnum.Samples, out int samples);
+                _gl.GetInteger(GLEnum.Stencil, out int stencil);
+
+                RenderTarget = new GRBackendRenderTarget((int)Size.X, (int)Size.Y, samples, stencil, new GRGlFramebufferInfo(Framebuffer.DrawFbo, SKColorType.Rgba8888.ToGlSizedFormat()));
+                Surface = SKSurface.Create(SkiaContext, RenderTarget, GRSurfaceOrigin.TopLeft, SKColorType.Rgba8888);
+            }
 
             IsDrawing = true;
         }
@@ -215,9 +161,8 @@ public unsafe class Canvas : IDisposable
     {
         if (IsDrawing)
         {
-            _gl.BindFramebuffer(GLEnum.ReadFramebuffer, Framebuffer.MultisampleFbo);
-            _gl.BindFramebuffer(GLEnum.DrawFramebuffer, Framebuffer.DrawFbo);
-            _gl.BlitFramebuffer(0, 0, (int)Size.X, (int)Size.Y, 0, 0, (int)Size.X, (int)Size.Y, ClearBufferMask.ColorBufferBit, GLEnum.Nearest);
+            SkiaContext.Flush();
+            SkiaContext.ResetContext();
 
             _gl.BindFramebuffer(GLEnum.Framebuffer, RecordFbo);
             _gl.Viewport(RecordPosition.X, RecordPosition.Y, RecordSize.X, RecordSize.Y);
@@ -231,10 +176,9 @@ public unsafe class Canvas : IDisposable
     /// </summary>
     public void Clear()
     {
-        Draw(null, () =>
-        {
-            _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
-        });
+        _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+
+        Surface.Canvas.Clear(SKColors.White);
     }
 
     /// <summary>
@@ -244,26 +188,15 @@ public unsafe class Canvas : IDisposable
     /// <param name="color">填充颜色</param>
     public void DrawRectangle(RectangleF rectangle, Color color)
     {
-        Draw(SolidColorProgram, () =>
+        using SKPaint paint = new()
         {
-            _gl.Uniform4(SolidColorProgram.GetUniformLocation(SolidColorFragment.SolidColorUniform), color.ToVector4());
+            IsAntialias = true,
+            IsDither = true,
+            FilterQuality = SKFilterQuality.High,
+            ColorF = new SKColor(color.R, color.G, color.B, color.A)
+        };
 
-            float[] vertices = new float[] {
-                rectangle.Left, rectangle.Top, 0.0f,
-                rectangle.Left, rectangle.Bottom, 0.0f,
-                rectangle.Right, rectangle.Top, 0.0f,
-                rectangle.Right, rectangle.Bottom, 0.0f
-            };
-
-            _gl.BindBuffer(GLEnum.ArrayBuffer, RectangleBuffer);
-
-            _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(vertices.Length * sizeof(float)), vertices);
-            _gl.VertexAttribPointer((uint)SolidColorProgram.GetAttribLocation(DefaultVertex.PositionAttrib), 3, GLEnum.Float, false, 0, null);
-
-            _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-
-            _gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
-        });
+        Surface.Canvas.DrawRect(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, paint);
     }
 
     /// <summary>
@@ -274,27 +207,15 @@ public unsafe class Canvas : IDisposable
     /// <param name="color">填充颜色</param>
     public void DrawCircle(PointF origin, float radius, Color color)
     {
-        Draw(SolidColorProgram, () =>
+        using SKPaint paint = new()
         {
-            _gl.Uniform4(SolidColorProgram.GetUniformLocation(SolidColorFragment.SolidColorUniform), color.ToVector4());
+            IsAntialias = true,
+            IsDither = true,
+            FilterQuality = SKFilterQuality.High,
+            ColorF = new SKColor(color.R, color.G, color.B, color.A)
+        };
 
-            float[] vertices = new float[CirclePoints * 3];
-            for (int i = 0; i < CirclePoints; i++)
-            {
-                vertices[i * 3] = origin.X + radius * MathF.Cos(2 * MathF.PI * i / CirclePoints);
-                vertices[i * 3 + 1] = origin.Y + radius * MathF.Sin(2 * MathF.PI * i / CirclePoints);
-                vertices[i * 3 + 2] = 0.0f;
-            }
-
-            _gl.BindBuffer(GLEnum.ArrayBuffer, CircleBuffer);
-
-            _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(vertices.Length * sizeof(float)), vertices);
-            _gl.VertexAttribPointer((uint)SolidColorProgram.GetAttribLocation(DefaultVertex.PositionAttrib), 3, GLEnum.Float, false, 0, null);
-
-            _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-
-            _gl.DrawArrays(GLEnum.TriangleFan, 0, CirclePoints);
-        });
+        Surface.Canvas.DrawCircle(origin.X, origin.Y, radius, paint);
     }
 
     /// <summary>
@@ -306,30 +227,17 @@ public unsafe class Canvas : IDisposable
     /// <param name="color">填充颜色</param>
     public void DrawLine(PointF start, PointF end, float width, Color color)
     {
-        Draw(SolidColorProgram, () =>
+        using SKPaint paint = new()
         {
-            _gl.Uniform4(SolidColorProgram.GetUniformLocation(SolidColorFragment.SolidColorUniform), color.ToVector4());
+            IsAntialias = true,
+            IsDither = true,
+            FilterQuality = SKFilterQuality.High,
+            ColorF = new SKColor(color.R, color.G, color.B, color.A),
+            StrokeWidth = width,
+            Style = SKPaintStyle.Stroke
+        };
 
-            float[] vertices = new float[6];
-
-            vertices[0] = start.X;
-            vertices[1] = start.Y;
-            vertices[2] = 0.0f;
-
-            vertices[3] = end.X;
-            vertices[4] = end.Y;
-            vertices[5] = 0.0f;
-
-            _gl.BindBuffer(GLEnum.ArrayBuffer, LineBuffer);
-
-            _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(vertices.Length * sizeof(float)), vertices);
-            _gl.VertexAttribPointer((uint)SolidColorProgram.GetAttribLocation(DefaultVertex.PositionAttrib), 3, GLEnum.Float, false, 0, null);
-
-            _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-
-            _gl.LineWidth(width);
-            _gl.DrawArrays(GLEnum.Lines, 0, 2);
-        });
+        Surface.Canvas.DrawLine(start.X, start.Y, end.X, end.Y, paint);
     }
 
     /// <summary>
@@ -342,35 +250,40 @@ public unsafe class Canvas : IDisposable
     /// <param name="fontPath">字体文件</param>
     public void DrawString(Point point, string text, uint size, Color color, string fontPath)
     {
-        Draw(SolidColorProgram, () =>
+        if (!_typeface.TryGetValue(fontPath, out SKTypeface typeface))
         {
-            _gl.Viewport(point.X, point.Y, Size.X, Size.Y);
+            typeface = SKTypeface.FromStream(FileManager.LoadFile(fontPath));
 
-            _gl.Uniform4(SolidColorProgram.GetUniformLocation(SolidColorFragment.SolidColorUniform), color.ToVector4());
+            _typeface.Add(fontPath, typeface);
+        }
 
-            _gl.BindBuffer(GLEnum.ArrayBuffer, StringBuffer);
+        using SKPaint paint = new()
+        {
+            IsAntialias = true,
+            IsDither = true,
+            FilterQuality = SKFilterQuality.High,
+            ColorF = new SKColor(color.R, color.G, color.B, color.A),
+            TextSize = size,
+            Typeface = typeface
+        };
 
-            _gl.VertexAttribPointer((uint)SolidColorProgram.GetAttribLocation(DefaultVertex.PositionAttrib), 2, GLEnum.Float, false, 0, null);
-
-            foreach ((float[] vertices, uint vertexCount) in GlyphHelper.GetVertices(text, size, fontPath))
-            {
-                _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.StreamDraw);
-
-                _gl.DrawArrays(GLEnum.Triangles, 0, vertexCount);
-            }
-
-            _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-
-            _gl.Viewport(0, 0, Size.X, Size.Y);
-        });
+        Surface.Canvas.DrawText(text, point.X, point.Y, paint);
     }
 
     /// <summary>
     /// 绘制画板
     /// </summary>
     /// <param name="canvas">画板</param>
-    public void DrawCanvas(Canvas canvas, Rectangle<int> rectangle, bool clipToBounds)
+    public void DrawCanvas(ICanvas canvas, Rectangle<int> rectangle, bool clipToBounds)
     {
+        if (canvas is not SkiaCanvas skiaCanvas)
+        {
+            throw new Exception("不支持的画板类型");
+        }
+
+        End();
+        Begin();
+
         Draw(TextureProgram, () =>
         {
             uint width, height;
@@ -381,24 +294,24 @@ public unsafe class Canvas : IDisposable
             }
             else
             {
-                width = canvas.Size.X;
-                height = canvas.Size.Y;
+                width = skiaCanvas.Size.X;
+                height = skiaCanvas.Size.Y;
             }
 
             _gl.Enable(GLEnum.ScissorTest);
 
-            _gl.Scissor(rectangle.Origin.X, rectangle.Origin.X, width, height);
+            _gl.Scissor(rectangle.Origin.X, rectangle.Origin.Y, width, height);
 
-            canvas.UpdateVertexBuffer(new Rectangle<float>(rectangle.Origin.X, rectangle.Origin.Y, canvas.Size.X, canvas.Size.Y));
+            skiaCanvas.UpdateVertexBuffer(new Rectangle<float>(rectangle.Origin.X, rectangle.Origin.Y, skiaCanvas.Size.X, skiaCanvas.Size.Y));
 
-            _gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
+            _gl.BindBuffer(GLEnum.ArrayBuffer, skiaCanvas.VertexBuffer);
             _gl.VertexAttribPointer((uint)TextureProgram.GetAttribLocation(DefaultVertex.PositionAttrib), 3, GLEnum.Float, false, 0, null);
 
-            _gl.BindBuffer(GLEnum.ArrayBuffer, canvas.TexCoordBuffer);
+            _gl.BindBuffer(GLEnum.ArrayBuffer, skiaCanvas.TexCoordBuffer);
             _gl.VertexAttribPointer((uint)TextureProgram.GetAttribLocation(DefaultVertex.TexCoordAttrib), 2, GLEnum.Float, false, 0, null);
 
             _gl.ActiveTexture(GLEnum.Texture0);
-            _gl.BindTexture(GLEnum.Texture2D, canvas.Framebuffer.DrawTexture);
+            _gl.BindTexture(GLEnum.Texture2D, skiaCanvas.Framebuffer.DrawTexture);
             _gl.Uniform1(TextureProgram.GetUniformLocation(TextureFragment.TexUniform), 0);
 
             _gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
@@ -418,12 +331,13 @@ public unsafe class Canvas : IDisposable
 
         _gl.DeleteBuffer(VertexBuffer);
         _gl.DeleteBuffer(TexCoordBuffer);
-        _gl.DeleteBuffer(RectangleBuffer);
-        _gl.DeleteBuffer(CircleBuffer);
-        _gl.DeleteBuffer(LineBuffer);
 
-        SolidColorProgram.Dispose();
         TextureProgram.Dispose();
+
+        SkiaContext.AbandonContext(true);
+        SkiaContext.Dispose();
+        RenderTarget.Dispose();
+        Surface.Dispose();
 
         GC.SuppressFinalize(this);
     }
@@ -441,20 +355,6 @@ public unsafe class Canvas : IDisposable
             if (program == null)
             {
                 drawAction?.Invoke();
-            }
-            else if (program == SolidColorProgram)
-            {
-                uint positionAttrib = (uint)program.GetAttribLocation(DefaultVertex.PositionAttrib);
-
-                _gl.EnableVertexAttribArray(positionAttrib);
-
-                program.Enable();
-
-                drawAction?.Invoke();
-
-                program.Disable();
-
-                _gl.DisableVertexAttribArray(positionAttrib);
             }
             else if (program == TextureProgram)
             {
@@ -500,7 +400,7 @@ public unsafe class Canvas : IDisposable
     /// <param name="gl">gl上下文</param>
     /// <param name="textureProgram">纹理着色器程序</param>
     /// <param name="canvas">画板</param>
-    public static void DrawOnWindow(GL gl, ShaderProgram textureProgram, Canvas canvas)
+    public static void DrawOnWindow(GL gl, ShaderProgram textureProgram, SkiaCanvas canvas)
     {
         uint positionAttrib = (uint)textureProgram.GetAttribLocation(DefaultVertex.PositionAttrib);
         uint texCoordAttrib = (uint)textureProgram.GetAttribLocation(DefaultVertex.TexCoordAttrib);
@@ -540,3 +440,4 @@ public unsafe class Canvas : IDisposable
         gl.DisableVertexAttribArray(texCoordAttrib);
     }
 }
+
