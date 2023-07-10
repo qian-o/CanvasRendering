@@ -1,5 +1,4 @@
 ﻿using CanvasRendering.Contracts;
-using CanvasRendering.Shaders;
 using Silk.NET.Maths;
 using Silk.NET.OpenGLES;
 using SkiaSharp;
@@ -13,7 +12,6 @@ public unsafe class SkiaCanvas : ICanvas
     private static readonly Dictionary<string, SKTypeface> _typeface = new();
 
     private readonly GL _gl;
-    private readonly ShaderHelper _shaderHelper;
 
     /// <summary>
     /// 绘制状态
@@ -55,21 +53,15 @@ public unsafe class SkiaCanvas : ICanvas
     /// </summary>
     public uint TexCoordBuffer { get; private set; }
 
-    /// <summary>
-    /// 纹理着色器程序
-    /// </summary>
-    public ShaderProgram TextureProgram { get; private set; }
-
     public GRContext SkiaContext { get; private set; }
 
     public GRBackendRenderTarget RenderTarget { get; private set; }
 
     public SKSurface Surface { get; private set; }
 
-    public SkiaCanvas(GL gl, ShaderHelper shaderHelper, Vector2D<uint> size)
+    public SkiaCanvas(GL gl, Vector2D<uint> size)
     {
         _gl = gl;
-        _shaderHelper = shaderHelper;
         Size = size;
 
         Initialization();
@@ -94,30 +86,12 @@ public unsafe class SkiaCanvas : ICanvas
 
         // 纹理坐标系
         {
-            float[] texCoords = new float[] {
-                0, 0,
-                0, 1,
-                1, 0,
-                1, 1
-            };
+            float[] texCoords = new float[8];
 
             TexCoordBuffer = _gl.GenBuffer();
             _gl.BindBuffer(GLEnum.ArrayBuffer, TexCoordBuffer);
-            _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(texCoords.Length * sizeof(float)), texCoords, GLEnum.StaticDraw);
+            _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(texCoords.Length * sizeof(float)), texCoords, GLEnum.DynamicDraw);
             _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-        }
-
-        // TextureProgram
-        {
-            TextureProgram = new ShaderProgram(_gl);
-            TextureProgram.Attach(_shaderHelper.GetShader(DefaultVertex.Name), _shaderHelper.GetShader(TextureFragment.Name));
-
-            TextureProgram.Enable();
-
-            Matrix4x4 projectionMatrix = Matrix4x4.CreateOrthographicOffCenter(0.0f, Size.X, 0.0f, Size.Y, -1.0f, 1.0f);
-            _gl.UniformMatrix4(TextureProgram.GetUniformLocation(DefaultVertex.ProjectionUniform), 1, false, (float*)&projectionMatrix);
-
-            TextureProgram.Disable();
         }
 
         SkiaContext = GRContext.CreateGl();
@@ -193,7 +167,8 @@ public unsafe class SkiaCanvas : ICanvas
             IsAntialias = true,
             IsDither = true,
             FilterQuality = SKFilterQuality.High,
-            ColorF = new SKColor(color.R, color.G, color.B, color.A)
+            ColorF = new SKColor(color.R, color.G, color.B, color.A),
+            BlendMode = SKBlendMode.SrcIn
         };
 
         Surface.Canvas.DrawRect(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, paint);
@@ -271,122 +246,29 @@ public unsafe class SkiaCanvas : ICanvas
     }
 
     /// <summary>
-    /// 绘制画板
-    /// </summary>
-    /// <param name="canvas">画板</param>
-    public void DrawCanvas(ICanvas canvas, Rectangle<int> rectangle, bool clipToBounds)
-    {
-        if (canvas is not SkiaCanvas skiaCanvas)
-        {
-            throw new Exception("不支持的画板类型");
-        }
-
-        End();
-        Begin();
-
-        Draw(TextureProgram, () =>
-        {
-            uint width, height;
-            if (clipToBounds)
-            {
-                width = (uint)rectangle.Size.X;
-                height = (uint)rectangle.Size.Y;
-            }
-            else
-            {
-                width = skiaCanvas.Size.X;
-                height = skiaCanvas.Size.Y;
-            }
-
-            _gl.Enable(GLEnum.ScissorTest);
-
-            _gl.Scissor(rectangle.Origin.X, rectangle.Origin.Y, width, height);
-
-            skiaCanvas.UpdateVertexBuffer(new Rectangle<float>(rectangle.Origin.X, rectangle.Origin.Y, skiaCanvas.Size.X, skiaCanvas.Size.Y));
-
-            _gl.BindBuffer(GLEnum.ArrayBuffer, skiaCanvas.VertexBuffer);
-            _gl.VertexAttribPointer((uint)TextureProgram.GetAttribLocation(DefaultVertex.PositionAttrib), 3, GLEnum.Float, false, 0, null);
-
-            _gl.BindBuffer(GLEnum.ArrayBuffer, skiaCanvas.TexCoordBuffer);
-            _gl.VertexAttribPointer((uint)TextureProgram.GetAttribLocation(DefaultVertex.TexCoordAttrib), 2, GLEnum.Float, false, 0, null);
-
-            _gl.ActiveTexture(GLEnum.Texture0);
-            _gl.BindTexture(GLEnum.Texture2D, skiaCanvas.Framebuffer.DrawTexture);
-            _gl.Uniform1(TextureProgram.GetUniformLocation(TextureFragment.TexUniform), 0);
-
-            _gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
-
-            _gl.BindTexture(GLEnum.Texture2D, 0);
-
-            _gl.Disable(GLEnum.ScissorTest);
-        });
-    }
-
-    /// <summary>
-    /// 回收资源
-    /// </summary>
-    public void Dispose()
-    {
-        Framebuffer.Dispose();
-
-        _gl.DeleteBuffer(VertexBuffer);
-        _gl.DeleteBuffer(TexCoordBuffer);
-
-        TextureProgram.Dispose();
-
-        SkiaContext.AbandonContext(true);
-        SkiaContext.Dispose();
-        RenderTarget.Dispose();
-        Surface.Dispose();
-
-        GC.SuppressFinalize(this);
-    }
-
-    /// <summary>
-    /// 内部绘制使用
-    /// 用于判断是否正在绘制，如果正在绘制则使用指定的着色器程序进行绘制。
-    /// </summary>
-    /// <param name="program">着色器程序</param>
-    /// <param name="drawAction">绘制函数</param>
-    private void Draw(ShaderProgram program, Action drawAction)
-    {
-        if (IsDrawing)
-        {
-            if (program == null)
-            {
-                drawAction?.Invoke();
-            }
-            else if (program == TextureProgram)
-            {
-                uint positionAttrib = (uint)program.GetAttribLocation(DefaultVertex.PositionAttrib);
-                uint texCoordAttrib = (uint)program.GetAttribLocation(DefaultVertex.TexCoordAttrib);
-
-                _gl.EnableVertexAttribArray(positionAttrib);
-                _gl.EnableVertexAttribArray(texCoordAttrib);
-
-                program.Enable();
-
-                drawAction?.Invoke();
-
-                program.Disable();
-
-                _gl.DisableVertexAttribArray(positionAttrib);
-                _gl.DisableVertexAttribArray(texCoordAttrib);
-            }
-        }
-    }
-
-    /// <summary>
-    /// 更新当前画板的顶点缓冲区，用于后续绘制该画板时使用。
+    /// 更新当前画板的顶点缓冲区
     /// </summary>
     /// <param name="rectangle">绘制该画板时的坐标及大小</param>
-    private void UpdateVertexBuffer(Rectangle<float> rectangle)
+    /// <param name="layoutTransform">布局变换矩阵</param>
+    public void UpdateVertexBuffer(Rectangle<float> rectangle, Matrix4x4 layoutTransform)
     {
+        Vector3 point1 = new(rectangle.Origin.X, rectangle.Origin.Y, 0);
+        point1 = Vector3.Transform(point1, layoutTransform);
+
+        Vector3 point2 = new(rectangle.Origin.X, rectangle.Max.Y, 0);
+        point2 = Vector3.Transform(point2, layoutTransform);
+
+        Vector3 point3 = new(rectangle.Max.X, rectangle.Origin.Y, 0);
+        point3 = Vector3.Transform(point3, layoutTransform);
+
+        Vector3 point4 = new(rectangle.Max.X, rectangle.Max.Y, 0);
+        point4 = Vector3.Transform(point4, layoutTransform);
+
         float[] vertices = new float[] {
-            rectangle.Origin.X, rectangle.Origin.Y, 0,
-            rectangle.Origin.X, rectangle.Max.Y, 0,
-            rectangle.Max.X, rectangle.Origin.Y, 0,
-            rectangle.Max.X, rectangle.Max.Y, 0
+            point1.X, point1.Y, point1.Z,
+            point2.X, point2.Y, point2.Z,
+            point3.X, point3.Y, point3.Z,
+            point4.X, point4.Y, point4.Z
         };
 
         _gl.BindBuffer(GLEnum.ArrayBuffer, VertexBuffer);
@@ -395,49 +277,47 @@ public unsafe class SkiaCanvas : ICanvas
     }
 
     /// <summary>
-    /// 在窗口上绘制画板
+    /// 更新当前画板的纹理缓冲区
     /// </summary>
-    /// <param name="gl">gl上下文</param>
-    /// <param name="textureProgram">纹理着色器程序</param>
-    /// <param name="canvas">画板</param>
-    public static void DrawOnWindow(GL gl, ShaderProgram textureProgram, SkiaCanvas canvas)
+    /// <param name="renderTransform">渲染变换矩阵</param>
+    public void UpdateTexCoordBuffer(Matrix4x4 renderTransform)
     {
-        uint positionAttrib = (uint)textureProgram.GetAttribLocation(DefaultVertex.PositionAttrib);
-        uint texCoordAttrib = (uint)textureProgram.GetAttribLocation(DefaultVertex.TexCoordAttrib);
+        Vector2 point1 = new(0, 0);
+        point1 = Vector2.Transform(point1, renderTransform);
 
-        gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+        Vector2 point2 = new(0, 1);
+        point2 = Vector2.Transform(point2, renderTransform);
 
-        gl.EnableVertexAttribArray(positionAttrib);
-        gl.EnableVertexAttribArray(texCoordAttrib);
+        Vector2 point3 = new(1, 0);
+        point3 = Vector2.Transform(point3, renderTransform);
 
-        textureProgram.Enable();
+        Vector2 point4 = new(1, 1);
+        point4 = Vector2.Transform(point4, renderTransform);
 
-        Matrix4x4 projection = Matrix4x4.CreateOrthographicOffCenter(0.0f, canvas.Size.X, canvas.Size.Y, 0.0f, -1.0f, 1.0f);
+        float[] texCoords = new float[] {
+            point1.X, point1.Y,
+            point2.X, point2.Y,
+            point3.X, point3.Y,
+            point4.X, point4.Y
+        };
 
-        gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.ProjectionUniform), 1, false, (float*)&projection);
+        _gl.BindBuffer(GLEnum.ArrayBuffer, TexCoordBuffer);
+        _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(texCoords.Length * sizeof(float)), texCoords);
+        _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
+    }
 
-        canvas.UpdateVertexBuffer(new Rectangle<float>(0, 0, canvas.Size.X, canvas.Size.Y));
+    public void Dispose()
+    {
+        Framebuffer.Dispose();
 
-        gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
-        gl.VertexAttribPointer(positionAttrib, 3, GLEnum.Float, false, 0, null);
+        _gl.DeleteBuffer(VertexBuffer);
+        _gl.DeleteBuffer(TexCoordBuffer);
 
-        gl.BindBuffer(GLEnum.ArrayBuffer, canvas.TexCoordBuffer);
-        gl.VertexAttribPointer(texCoordAttrib, 2, GLEnum.Float, false, 0, null);
+        SkiaContext.AbandonContext(true);
+        SkiaContext.Dispose();
+        RenderTarget?.Dispose();
+        Surface?.Dispose();
 
-        gl.ActiveTexture(GLEnum.Texture0);
-        gl.BindTexture(GLEnum.Texture2D, canvas.Framebuffer.DrawTexture);
-        gl.Uniform1(textureProgram.GetUniformLocation(TextureFragment.TexUniform), 0);
-
-        gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
-
-        gl.BindTexture(GLEnum.Texture2D, 0);
-
-        gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-
-        textureProgram.Disable();
-
-        gl.DisableVertexAttribArray(positionAttrib);
-        gl.DisableVertexAttribArray(texCoordAttrib);
+        GC.SuppressFinalize(this);
     }
 }
-

@@ -1,5 +1,4 @@
-﻿using Silk.NET.Maths;
-using System.Drawing;
+﻿using System.Drawing;
 
 namespace CanvasRendering.Contracts;
 
@@ -18,6 +17,4 @@ public interface ICanvas : IDisposable
     void DrawLine(PointF start, PointF end, float width, Color color);
 
     void DrawString(Point point, string text, uint size, Color color, string fontPath);
-
-    void DrawCanvas(ICanvas canvas, Rectangle<int> rectangle, bool clipToBounds);
 }
