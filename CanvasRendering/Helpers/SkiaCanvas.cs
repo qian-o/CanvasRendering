@@ -252,16 +252,16 @@ public unsafe class SkiaCanvas : ICanvas
     /// <param name="layoutTransform">布局变换矩阵</param>
     public void UpdateVertexBuffer(Rectangle<float> rectangle, int windowWidth, int windowHeight, Matrix4x4 layoutTransform)
     {
-        Vector3 point1 = new(rectangle.Origin.X / windowWidth, rectangle.Origin.Y / windowHeight, 0);
+        Vector3 point1 = new(rectangle.Origin.X / windowWidth, rectangle.Origin.Y / windowHeight, 1);
         point1 = Vector3.Transform(point1, layoutTransform);
 
-        Vector3 point2 = new(rectangle.Origin.X / windowWidth, rectangle.Max.Y / windowHeight, 0);
+        Vector3 point2 = new(rectangle.Origin.X / windowWidth, rectangle.Max.Y / windowHeight, 1);
         point2 = Vector3.Transform(point2, layoutTransform);
 
-        Vector3 point3 = new(rectangle.Max.X / windowWidth, rectangle.Origin.Y / windowHeight, 0);
+        Vector3 point3 = new(rectangle.Max.X / windowWidth, rectangle.Origin.Y / windowHeight, 1);
         point3 = Vector3.Transform(point3, layoutTransform);
 
-        Vector3 point4 = new(rectangle.Max.X / windowWidth, rectangle.Max.Y / windowHeight, 0);
+        Vector3 point4 = new(rectangle.Max.X / windowWidth, rectangle.Max.Y / windowHeight, 1);
         point4 = Vector3.Transform(point4, layoutTransform);
 
         float[] vertices = new float[] {

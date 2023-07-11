@@ -17,6 +17,8 @@ public unsafe static class CanvasDraw
     private static int _width, _height;
     private static TestControl1 _c1;
     private static TestControl1 _c2;
+    private static TestControl1 _c3;
+    private static int _angle;
 
     public static string FontPath { get; set; }
 
@@ -40,14 +42,21 @@ public unsafe static class CanvasDraw
             Left = 100,
             Top = 100,
             Width = 400,
-            Height = 400,
-            LayoutTransform = Matrix4x4.CreateScale(new Vector3(0.5f, 1, 1)),
-            RenderTransform = Matrix4x4.CreateScale(new Vector3(0.5f, 1, 1))
+            Height = 400
         };
+
         _c2 = new TestControl1(_gl)
         {
             Left = 600,
             Top = 100,
+            Width = 400,
+            Height = 400
+        };
+
+        _c3 = new TestControl1(_gl)
+        {
+            Left = 100,
+            Top = 600,
             Width = 400,
             Height = 400
         };
@@ -72,6 +81,33 @@ public unsafe static class CanvasDraw
 
         _c2.StartRender();
         _c2.DrawOnWindow(_width, _height, _textureProgram);
+
+        _c3.StartRender();
+        _c3.DrawOnWindow(_width, _height, _textureProgram);
+
+        {
+            float x = (_c1.Left + (_c1.Width / 2.0f)) / _width;
+            float y = (_c1.Top + (_c1.Height / 2.0f)) / _height;
+            _c1.LayoutTransform = Matrix4x4.CreateRotationX((float)(_angle * Math.PI / 180.0), new Vector3(x, y, 1.0f));
+        }
+
+        {
+            float x = (_c2.Left + (_c2.Width / 2.0f)) / _width;
+            float y = (_c2.Top + (_c2.Height / 2.0f)) / _height;
+            _c2.LayoutTransform = Matrix4x4.CreateRotationY((float)(_angle * Math.PI / 180.0), new Vector3(x, y, 1.0f));
+        }
+
+        {
+            float x = (_c3.Left + (_c3.Width / 2.0f)) / _width;
+            float y = (_c3.Top + (_c3.Height / 2.0f)) / _height;
+            _c3.LayoutTransform = Matrix4x4.CreateRotationZ((float)(_angle * Math.PI / 180.0), new Vector3(x, y, 1.0f));
+        }
+
+        _angle += 1;
+        if (_angle == 360)
+        {
+            _angle = 0;
+        }
 
         if (fpsSample.Count == 60)
         {
