@@ -39,8 +39,8 @@ public unsafe static class CanvasDraw
         _height = height;
         _c1 = new TestControl1(_gl)
         {
-            Left = 100,
-            Top = 100,
+            Left = 0,
+            Top = 0,
             Width = 400,
             Height = 400
         };
@@ -76,6 +76,9 @@ public unsafe static class CanvasDraw
 
         _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
+        // _c1.LayoutTransform = Matrix4x4.CreateRotationY((float)(_angle * Math.PI / 180.0), new Vector3(200, -30, 0.0f));
+        // _c2.LayoutTransform = Matrix4x4.CreateTranslation(new Vector3(0.0f, 0, -15.0f));
+
         _c1.StartRender();
         _c1.DrawOnWindow(_width, _height, _textureProgram);
 
@@ -84,24 +87,6 @@ public unsafe static class CanvasDraw
 
         _c3.StartRender();
         _c3.DrawOnWindow(_width, _height, _textureProgram);
-
-        {
-            float x = (_c1.Left + (_c1.Width / 2.0f)) / _width;
-            float y = (_c1.Top + (_c1.Height / 2.0f)) / _height;
-            _c1.LayoutTransform = Matrix4x4.CreateRotationX((float)(_angle * Math.PI / 180.0), new Vector3(x, y, 1.0f));
-        }
-
-        {
-            float x = (_c2.Left + (_c2.Width / 2.0f)) / _width;
-            float y = (_c2.Top + (_c2.Height / 2.0f)) / _height;
-            _c2.LayoutTransform = Matrix4x4.CreateRotationY((float)(_angle * Math.PI / 180.0), new Vector3(x, y, 1.0f));
-        }
-
-        {
-            float x = (_c3.Left + (_c3.Width / 2.0f)) / _width;
-            float y = (_c3.Top + (_c3.Height / 2.0f)) / _height;
-            _c3.LayoutTransform = Matrix4x4.CreateRotationZ((float)(_angle * Math.PI / 180.0), new Vector3(x, y, 1.0f));
-        }
 
         _angle += 1;
         if (_angle == 360)

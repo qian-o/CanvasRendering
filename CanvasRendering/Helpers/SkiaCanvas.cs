@@ -250,19 +250,15 @@ public unsafe class SkiaCanvas : ICanvas
     /// </summary>
     /// <param name="rectangle">绘制该画板时的坐标及大小</param>
     /// <param name="layoutTransform">布局变换矩阵</param>
-    public void UpdateVertexBuffer(Rectangle<float> rectangle, int windowWidth, int windowHeight, Matrix4x4 layoutTransform)
+    public void UpdateVertexBuffer(Rectangle<float> rectangle)
     {
-        Vector3 point1 = new(rectangle.Origin.X / windowWidth, rectangle.Origin.Y / windowHeight, 1);
-        point1 = Vector3.Transform(point1, layoutTransform);
+        Vector3 point1 = new(rectangle.Origin.X, rectangle.Origin.Y, 0.0f);
 
-        Vector3 point2 = new(rectangle.Origin.X / windowWidth, rectangle.Max.Y / windowHeight, 1);
-        point2 = Vector3.Transform(point2, layoutTransform);
+        Vector3 point2 = new(rectangle.Origin.X, rectangle.Max.Y, 0.0f);
 
-        Vector3 point3 = new(rectangle.Max.X / windowWidth, rectangle.Origin.Y / windowHeight, 1);
-        point3 = Vector3.Transform(point3, layoutTransform);
+        Vector3 point3 = new(rectangle.Max.X, rectangle.Origin.Y, 0.0f);
 
-        Vector3 point4 = new(rectangle.Max.X / windowWidth, rectangle.Max.Y / windowHeight, 1);
-        point4 = Vector3.Transform(point4, layoutTransform);
+        Vector3 point4 = new(rectangle.Max.X, rectangle.Max.Y, 0.0f);
 
         float[] vertices = new float[] {
             point1.X, point1.Y, point1.Z,
@@ -280,7 +276,7 @@ public unsafe class SkiaCanvas : ICanvas
     /// 更新当前画板的纹理缓冲区
     /// </summary>
     /// <param name="renderTransform">渲染变换矩阵</param>
-    public void UpdateTexCoordBuffer(Matrix4x4 renderTransform)
+    public void UpdateTexCoordBuffer(Matrix3x2 renderTransform)
     {
         Vector2 point1 = new(0, 0);
         point1 = Vector2.Transform(point1, renderTransform);
