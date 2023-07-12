@@ -39,10 +39,11 @@ public unsafe static class CanvasDraw
         _height = height;
         _c1 = new TestControl1(_gl)
         {
-            Left = 0,
-            Top = 0,
+            Left = 100,
+            Top = 100,
             Width = 400,
-            Height = 400
+            Height = 400,
+            Text = "X 轴 旋转"
         };
 
         _c2 = new TestControl1(_gl)
@@ -50,7 +51,8 @@ public unsafe static class CanvasDraw
             Left = 600,
             Top = 100,
             Width = 400,
-            Height = 400
+            Height = 400,
+            Text = "Y 轴 旋转"
         };
 
         _c3 = new TestControl1(_gl)
@@ -58,7 +60,8 @@ public unsafe static class CanvasDraw
             Left = 100,
             Top = 600,
             Width = 400,
-            Height = 400
+            Height = 400,
+            Text = "Z 轴 旋转"
         };
     }
 
@@ -76,8 +79,28 @@ public unsafe static class CanvasDraw
 
         _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
-        // _c1.LayoutTransform = Matrix4x4.CreateRotationY((float)(_angle * Math.PI / 180.0), new Vector3(200, -30, 0.0f));
-        // _c2.LayoutTransform = Matrix4x4.CreateTranslation(new Vector3(0.0f, 0, -15.0f));
+        Matrix4x4 orthographic = Matrix4x4.CreateOrthographicOffCenter(0.0f, _width, _height, 0.0f, 0.0f, 1.0f);
+
+        {
+            Vector3 centerPoint = new(_c1.Left + (_c1.Width / 2.0f), _c1.Top + (_c1.Height / 2.0f), 1.0f);
+            centerPoint = Vector3.Transform(centerPoint, orthographic);
+
+            _c1.LayoutTransform = Matrix4x4.CreateRotationX((float)(_angle * Math.PI / 180.0), centerPoint);
+        }
+
+        {
+            Vector3 centerPoint = new(_c2.Left + (_c2.Width / 2.0f), _c2.Top + (_c2.Height / 2.0f), 1.0f);
+            centerPoint = Vector3.Transform(centerPoint, orthographic);
+
+            _c2.LayoutTransform = Matrix4x4.CreateRotationY((float)(_angle * Math.PI / 180.0), centerPoint);
+        }
+
+        {
+            Vector3 centerPoint = new(_c3.Left + (_c3.Width / 2.0f), _c3.Top + (_c3.Height / 2.0f), 1.0f);
+            centerPoint = Vector3.Transform(centerPoint, orthographic);
+
+            _c3.LayoutTransform = Matrix4x4.CreateRotationZ((float)(_angle * Math.PI / 180.0), centerPoint);
+        }
 
         _c1.StartRender();
         _c1.DrawOnWindow(_width, _height, _textureProgram);

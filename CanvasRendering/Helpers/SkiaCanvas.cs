@@ -252,13 +252,13 @@ public unsafe class SkiaCanvas : ICanvas
     /// <param name="layoutTransform">布局变换矩阵</param>
     public void UpdateVertexBuffer(Rectangle<float> rectangle)
     {
-        Vector3 point1 = new(rectangle.Origin.X, rectangle.Origin.Y, 0.0f);
+        Vector3 point1 = new(rectangle.Origin.X, rectangle.Origin.Y, 1.0f);
 
-        Vector3 point2 = new(rectangle.Origin.X, rectangle.Max.Y, 0.0f);
+        Vector3 point2 = new(rectangle.Origin.X, rectangle.Max.Y, 1.0f);
 
-        Vector3 point3 = new(rectangle.Max.X, rectangle.Origin.Y, 0.0f);
+        Vector3 point3 = new(rectangle.Max.X, rectangle.Origin.Y, 1.0f);
 
-        Vector3 point4 = new(rectangle.Max.X, rectangle.Max.Y, 0.0f);
+        Vector3 point4 = new(rectangle.Max.X, rectangle.Max.Y, 1.0f);
 
         float[] vertices = new float[] {
             point1.X, point1.Y, point1.Z,
