@@ -249,7 +249,6 @@ public unsafe class SkiaCanvas : ICanvas
     /// 更新当前画板的顶点缓冲区
     /// </summary>
     /// <param name="rectangle">绘制该画板时的坐标及大小</param>
-    /// <param name="layoutTransform">布局变换矩阵</param>
     public void UpdateVertexBuffer(Rectangle<float> rectangle)
     {
         Vector3 point1 = new(rectangle.Origin.X, rectangle.Origin.Y, 1.0f);
