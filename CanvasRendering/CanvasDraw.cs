@@ -28,8 +28,6 @@ public unsafe static class CanvasDraw
     {
         _gl = gl;
 
-        _gl.ClearColor(Color.White);
-
         _shaderHelper = new ShaderHelper(_gl);
 
         _textureProgram = new ShaderProgram(_gl);
@@ -48,11 +46,12 @@ public unsafe static class CanvasDraw
 
         _c2 = new TestControl1(_gl)
         {
-            Left = 600,
+            Left = 100,
             Top = 100,
             Width = 400,
             Height = 200,
-            Text = "Y 轴 旋转"
+            Text = "Y 轴 旋转",
+            Fill = Color.Transparent
         };
 
         _c3 = new TestControl1(_gl)
@@ -77,6 +76,7 @@ public unsafe static class CanvasDraw
     {
         _ = obj;
 
+        _gl.ClearColor(Color.White);
         _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
         Matrix4x4 orthographic = Matrix4x4.CreateOrthographicOffCenter(0.0f, _width, _height, 0.0f, 0.0f, 1.0f);
@@ -85,22 +85,37 @@ public unsafe static class CanvasDraw
             Vector2 centerPoint = new(_c1.Left + (_c1.Width / 2.0f), _c1.Top + (_c1.Height / 2.0f));
             centerPoint = Vector2.Transform(centerPoint, orthographic);
 
-            _c1.LayoutTransform = Matrix4x4.CreateRotationX((float)(_angle * Math.PI / 180.0), new Vector3(centerPoint, 1.0f));
+            Matrix4x4 matrix = Matrix4x4.CreateTranslation(new Vector3(-centerPoint.X, -centerPoint.Y, 0.0f));
+            matrix *= Matrix4x4.CreateRotationX((float)(_angle * Math.PI / 180.0), new Vector3(0.0f, 0.0f, 1.0f));
+            _c1.RenderTransform = matrix;
+
+            matrix = Matrix4x4.CreateTranslation(new Vector3(centerPoint.X, centerPoint.Y, 0.0f));
+            _c1.LayoutTransform = matrix;
         }
 
-        //{
-        //    Vector3 centerPoint = new(_c2.Left + (_c2.Width / 2.0f), _c2.Top + (_c2.Height / 2.0f), 1.0f);
-        //    centerPoint = Vector3.Transform(centerPoint, orthographic);
+        {
+            Vector2 centerPoint = new(_c2.Left + (_c2.Width / 2.0f), _c2.Top + (_c2.Height / 2.0f));
+            centerPoint = Vector2.Transform(centerPoint, orthographic);
 
-        //    _c2.LayoutTransform = Matrix4x4.CreateRotationY((float)(_angle * Math.PI / 180.0), centerPoint);
-        //}
+            Matrix4x4 matrix = Matrix4x4.CreateTranslation(new Vector3(-centerPoint.X, -centerPoint.Y, 0.0f));
+            matrix *= Matrix4x4.CreateRotationY((float)(_angle * Math.PI / 180.0), new Vector3(0.0f, 0.0f, 1.0f));
+            _c2.RenderTransform = matrix;
 
-        //{
-        //    Vector3 centerPoint = new(_c3.Left + (_c3.Width / 2.0f), _c3.Top + (_c3.Height / 2.0f), 1.0f);
-        //    centerPoint = Vector3.Transform(centerPoint, orthographic);
+            matrix = Matrix4x4.CreateTranslation(new Vector3(centerPoint.X, centerPoint.Y, 0.0f));
+            _c2.LayoutTransform = matrix;
+        }
 
-        //    _c3.LayoutTransform = Matrix4x4.CreateRotationZ((float)(_angle * Math.PI / 180.0), centerPoint);
-        //}
+        {
+            Vector3 centerPoint = new(_c3.Left + (_c3.Width / 2.0f), _c3.Top + (_c3.Height / 2.0f), 1.0f);
+            centerPoint = Vector3.Transform(centerPoint, orthographic);
+
+            Matrix4x4 matrix = Matrix4x4.CreateTranslation(new Vector3(-centerPoint.X, -centerPoint.Y, 0.0f));
+            matrix *= Matrix4x4.CreateRotationZ((float)(_angle * Math.PI / 180.0));
+            _c3.RenderTransform = matrix;
+
+            matrix = Matrix4x4.CreateTranslation(new Vector3(centerPoint.X, centerPoint.Y, 0.0f));
+            _c3.LayoutTransform = matrix;
+        }
 
         _c1.StartRender();
         _c1.DrawOnWindow(_width, _height, _textureProgram);

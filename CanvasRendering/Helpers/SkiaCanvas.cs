@@ -146,13 +146,21 @@ public unsafe class SkiaCanvas : ICanvas
     }
 
     /// <summary>
-    /// 清空画板（清空颜色由外部控制）
+    /// 清空画板
     /// </summary>
     public void Clear()
     {
+        _gl.ClearColor(Color.Transparent);
         _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+    }
 
-        Surface.Canvas.Clear(SKColors.White);
+    /// <summary>
+    /// 绘制填充颜色
+    /// </summary>
+    /// <param name="color"></param>
+    public void DrawFill(Color color)
+    {
+        Surface.Canvas.Clear(new SKColor(color.R, color.G, color.B, color.A));
     }
 
     /// <summary>
@@ -167,8 +175,8 @@ public unsafe class SkiaCanvas : ICanvas
             IsAntialias = true,
             IsDither = true,
             FilterQuality = SKFilterQuality.High,
-            ColorF = new SKColor(color.R, color.G, color.B, color.A),
-            BlendMode = SKBlendMode.SrcIn
+            Color = new SKColor(color.R, color.G, color.B, color.A),
+            BlendMode = SKBlendMode.Src
         };
 
         Surface.Canvas.DrawRect(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, paint);
@@ -187,7 +195,7 @@ public unsafe class SkiaCanvas : ICanvas
             IsAntialias = true,
             IsDither = true,
             FilterQuality = SKFilterQuality.High,
-            ColorF = new SKColor(color.R, color.G, color.B, color.A)
+            Color = new SKColor(color.R, color.G, color.B, color.A)
         };
 
         Surface.Canvas.DrawCircle(origin.X, origin.Y, radius, paint);
@@ -207,7 +215,7 @@ public unsafe class SkiaCanvas : ICanvas
             IsAntialias = true,
             IsDither = true,
             FilterQuality = SKFilterQuality.High,
-            ColorF = new SKColor(color.R, color.G, color.B, color.A),
+            Color = new SKColor(color.R, color.G, color.B, color.A),
             StrokeWidth = width,
             Style = SKPaintStyle.Stroke
         };
@@ -237,7 +245,7 @@ public unsafe class SkiaCanvas : ICanvas
             IsAntialias = true,
             IsDither = true,
             FilterQuality = SKFilterQuality.High,
-            ColorF = new SKColor(color.R, color.G, color.B, color.A),
+            Color = new SKColor(color.R, color.G, color.B, color.A),
             TextSize = size,
             Typeface = typeface
         };
@@ -274,20 +282,15 @@ public unsafe class SkiaCanvas : ICanvas
     /// <summary>
     /// 更新当前画板的纹理缓冲区
     /// </summary>
-    /// <param name="renderTransform">渲染变换矩阵</param>
-    public void UpdateTexCoordBuffer(Matrix3x2 renderTransform)
+    public void UpdateTexCoordBuffer()
     {
         Vector2 point1 = new(0, 0);
-        point1 = Vector2.Transform(point1, renderTransform);
 
         Vector2 point2 = new(0, 1);
-        point2 = Vector2.Transform(point2, renderTransform);
 
         Vector2 point3 = new(1, 0);
-        point3 = Vector2.Transform(point3, renderTransform);
 
         Vector2 point4 = new(1, 1);
-        point4 = Vector2.Transform(point4, renderTransform);
 
         float[] texCoords = new float[] {
             point1.X, point1.Y,

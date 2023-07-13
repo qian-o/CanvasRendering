@@ -10,6 +10,8 @@ public interface ICanvas : IDisposable
 
     void Clear();
 
+    void DrawFill(Color color);
+
     void DrawRectangle(RectangleF rectangle, Color color);
 
     void DrawCircle(PointF origin, float radius, Color color);

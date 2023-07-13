@@ -15,7 +15,7 @@ public unsafe class BaseControl
     private uint width;
     private uint height;
     private Matrix4x4 layoutTransform = Matrix4x4.Identity;
-    private Matrix3x2 renderTransform = Matrix3x2.Identity;
+    private Matrix4x4 renderTransform = Matrix4x4.Identity;
 
     public float Left { get => left; set { left = value; UpdateLayout(); } }
 
@@ -27,7 +27,7 @@ public unsafe class BaseControl
 
     public Matrix4x4 LayoutTransform { get => layoutTransform; set { layoutTransform = value; UpdateLayout(); } }
 
-    public Matrix3x2 RenderTransform { get => renderTransform; set { renderTransform = value; UpdateLayout(); } }
+    public Matrix4x4 RenderTransform { get => renderTransform; set { renderTransform = value; UpdateLayout(); } }
 
     public ICanvas Canvas { get; private set; }
 
@@ -56,8 +56,10 @@ public unsafe class BaseControl
         if (IsDirtyArea)
         {
             Canvas.Begin();
-            Canvas.Clear();
-            OnRender();
+            {
+                Canvas.Clear();
+                OnRender();
+            }
             Canvas.End();
 
             IsDirtyArea = false;
@@ -86,17 +88,19 @@ public unsafe class BaseControl
         textureProgram.Enable();
 
         Matrix4x4 orthographic = Matrix4x4.CreateOrthographicOffCenter(0.0f, windowWidth, windowHeight, 0.0f, 0.0f, 1.0f);
-        Matrix4x4 layoutTransform = LayoutTransform;
+        Matrix4x4 renderTransform = RenderTransform;
         Matrix4x4 view = Matrix4x4.CreateLookAt(new Vector3(0.0f, 0.0f, 2.0f), new Vector3(0.0f, 0.0f, 0.0f), new Vector3(0.0f, 1.0f, 0.0f));
-        Matrix4x4 perspective = Matrix4x4.CreatePerspectiveFieldOfView((float)(90.0f * Math.PI / 180.0), 1.0f, 1.0f, 100.0f);
+        Matrix4x4 perspective = Matrix4x4.CreatePerspectiveFieldOfView(MathF.PI / 2.0f, 1.0f, 1.0f, 100.0f);
+        Matrix4x4 layoutTransform = LayoutTransform;
 
         _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.OrthographicUniform), 1, false, (float*)&orthographic);
-        _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.LayoutTransformUniform), 1, false, (float*)&layoutTransform);
+        _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.RenderTransformUniform), 1, false, (float*)&renderTransform);
         _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.ViewUniform), 1, false, (float*)&view);
         _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.PerspectiveUniform), 1, false, (float*)&perspective);
+        _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.LayoutTransformUniform), 1, false, (float*)&layoutTransform);
 
         canvas.UpdateVertexBuffer(new Rectangle<float>(Left, Top, Width, Height));
-        canvas.UpdateTexCoordBuffer(RenderTransform);
+        canvas.UpdateTexCoordBuffer();
 
         _gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
         _gl.VertexAttribPointer(positionAttrib, 3, GLEnum.Float, false, 0, null);
