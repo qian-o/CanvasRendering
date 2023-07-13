@@ -39,8 +39,8 @@ public unsafe static class CanvasDraw
         _height = height;
         _c1 = new TestControl1(_gl)
         {
-            Left = 100,
-            Top = 100,
+            Left = 0,
+            Top = 0,
             Width = 200,
             Height = 400,
             Text = "X 轴 旋转"
@@ -82,10 +82,10 @@ public unsafe static class CanvasDraw
         Matrix4x4 orthographic = Matrix4x4.CreateOrthographicOffCenter(0.0f, _width, _height, 0.0f, 0.0f, 1.0f);
 
         {
-            Vector3 centerPoint = new(_c1.Left + (_c1.Width / 2.0f), _c1.Top + (_c1.Height / 2.0f), 1.0f);
-            centerPoint = Vector3.Transform(centerPoint, orthographic);
+            Vector2 centerPoint = new(_c1.Left + (_c1.Width / 2.0f), _c1.Top + (_c1.Height / 2.0f));
+            centerPoint = Vector2.Transform(centerPoint, orthographic);
 
-            _c1.LayoutTransform = Matrix4x4.CreateRotationX((float)(_angle * Math.PI / 180.0), centerPoint);
+            _c1.LayoutTransform = Matrix4x4.CreateRotationX((float)(_angle * Math.PI / 180.0), new Vector3(centerPoint, 1.0f));
         }
 
         //{

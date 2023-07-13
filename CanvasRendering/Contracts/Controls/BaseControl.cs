@@ -86,12 +86,12 @@ public unsafe class BaseControl
         textureProgram.Enable();
 
         Matrix4x4 orthographic = Matrix4x4.CreateOrthographicOffCenter(0.0f, windowWidth, windowHeight, 0.0f, 0.0f, 1.0f);
-        Matrix4x4 model = LayoutTransform;
-        Matrix4x4 view = Matrix4x4.CreateLookAt(new Vector3(0.0f, 0.0f, 0.0f), new Vector3(0.0f, 0.0f, -1.0f), new Vector3(0.0f, 1.0f, 0.0f));
+        Matrix4x4 layoutTransform = LayoutTransform;
+        Matrix4x4 view = Matrix4x4.CreateLookAt(new Vector3(0.0f, 0.0f, 2.0f), new Vector3(0.0f, 0.0f, 0.0f), new Vector3(0.0f, 1.0f, 0.0f));
         Matrix4x4 perspective = Matrix4x4.CreatePerspectiveFieldOfView((float)(90.0f * Math.PI / 180.0), 1.0f, 1.0f, 100.0f);
 
         _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.OrthographicUniform), 1, false, (float*)&orthographic);
-        _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.ModelUniform), 1, false, (float*)&model);
+        _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.LayoutTransformUniform), 1, false, (float*)&layoutTransform);
         _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.ViewUniform), 1, false, (float*)&view);
         _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.PerspectiveUniform), 1, false, (float*)&perspective);
 
