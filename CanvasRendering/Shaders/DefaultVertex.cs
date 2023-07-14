@@ -21,14 +21,17 @@ out vec2 fragTexCoord;
 
 void main() {
 
+   vec4 position1 = transform * vec4(position, 1.0);
+
    // Obtaining spatial coordinates using an orthogonal matrix.
-   vec4 actualPosition = vec4((orthographic * vec4(position, 1.0)).xy, position.z, 1.0);
+   vec4 actualPosition = orthographic * position1;
+   actualPosition.z = position1.z - 1.0f;
 
    // First, use the begin matrix for initial processing.
    actualPosition = begin * actualPosition;
 
    // Using transformation, camera, and perspective matrix.
-   actualPosition = perspective * view * transform * actualPosition;
+   actualPosition = perspective * view * actualPosition;
 
    // Finally, use the end matrix for final processing.
    gl_Position = end * actualPosition;

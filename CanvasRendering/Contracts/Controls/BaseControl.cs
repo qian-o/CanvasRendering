@@ -131,13 +131,12 @@ public unsafe class BaseControl
         centerPoint = Vector2.Transform(centerPoint, CanvasDraw.Orthographic);
 
         Vector2 originPoint = new(Left + (TransformOrigin.X * Width), Top + (TransformOrigin.Y * Height));
-        originPoint = Vector2.Transform(originPoint, CanvasDraw.Orthographic);
 
         orthographic = CanvasDraw.Orthographic;
 
         begin = Matrix4x4.CreateTranslation(-centerPoint.X, -centerPoint.Y, 0.0f);
 
-        transform = SetMatrixOrigin(Transform, originPoint - centerPoint);
+        transform = SetMatrixOrigin(Transform, originPoint);
 
         view = Matrix4x4.CreateLookAt(new Vector3(0.0f, 0.0f, 2.0f), new Vector3(0.0f, 0.0f, 0.0f), new Vector3(0.0f, 1.0f, 0.0f));
 
