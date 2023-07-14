@@ -25,7 +25,7 @@ void main() {
 
    // Obtaining spatial coordinates using an orthogonal matrix.
    vec4 actualPosition = orthographic * position1;
-   actualPosition.z = position1.z - 1.0f;
+   actualPosition.z = position1.z;
 
    // First, use the begin matrix for initial processing.
    actualPosition = begin * actualPosition;
