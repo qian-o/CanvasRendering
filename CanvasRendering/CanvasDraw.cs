@@ -68,7 +68,18 @@ public unsafe static class CanvasDraw
             Text = "Z 轴 旋转"
         };
 
+        Vector3 vector = new(100.0f, 100.0f, 0.0f);
         Orthographic = Matrix4x4.CreateOrthographicOffCenter(0.0f, Width, Height, 0.0f, 0.0f, 1.0f);
+
+        Vector3 calculation1 = Vector3.Transform(vector, Matrix4x4.CreateRotationX(50.0f * MathF.PI / 180, new Vector3(50.0f, 50.0f, 0.0f)));
+
+        calculation1 = Vector3.Transform(calculation1, Orthographic);
+
+        Vector2 vector1 = new(50.0f, 50.0f);
+        vector1 = Vector2.Transform(vector1, Orthographic);
+        Vector3 calculation2 = Vector3.Transform(vector, Orthographic);
+
+        calculation2 = Vector3.Transform(calculation2, Matrix4x4.CreateRotationX(50.0f * MathF.PI / 180, new Vector3(vector1, 0.0f)));
     }
 
     public static void Resize(Vector2D<int> obj)
