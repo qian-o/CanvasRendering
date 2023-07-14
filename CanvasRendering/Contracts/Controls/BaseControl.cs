@@ -15,7 +15,7 @@ public unsafe class BaseControl
     private uint width;
     private uint height;
     private Matrix4x4 transform = Matrix4x4.Identity;
-    private Vector2 transformOrigin = new(0.0f, 0.0f);
+    private Vector3 transformOrigin = new(0.0f, 0.0f, 0.0f);
 
     public float Left { get => left; set { left = value; UpdateLayout(); } }
 
@@ -27,7 +27,7 @@ public unsafe class BaseControl
 
     public Matrix4x4 Transform { get => transform; set { transform = value; UpdateLayout(); } }
 
-    public Vector2 TransformOrigin { get => transformOrigin; set { transformOrigin = value; UpdateLayout(); } }
+    public Vector3 TransformOrigin { get => transformOrigin; set { transformOrigin = value; UpdateLayout(); } }
 
     public ICanvas Canvas { get; private set; }
 
@@ -130,7 +130,7 @@ public unsafe class BaseControl
         Vector2 centerPoint = new(Left + (Width / 2.0f), Top + (Height / 2.0f));
         centerPoint = Vector2.Transform(centerPoint, CanvasDraw.Orthographic);
 
-        Vector2 originPoint = new(Left + (TransformOrigin.X * Width), Top + (TransformOrigin.Y * Height));
+        Vector3 originPoint = new(Left + (TransformOrigin.X * Width), Top + (TransformOrigin.Y * Height), TransformOrigin.Z);
 
         orthographic = CanvasDraw.Orthographic;
 
@@ -138,18 +138,19 @@ public unsafe class BaseControl
 
         transform = SetMatrixOrigin(Transform, originPoint);
 
-        view = Matrix4x4.CreateLookAt(new Vector3(0.0f, 0.0f, 2.0f), new Vector3(0.0f, 0.0f, 0.0f), new Vector3(0.0f, 1.0f, 0.0f));
+        view = Matrix4x4.CreateLookAt(new Vector3(0.0f, 0.0f, 1.5f), new Vector3(0.0f, 0.0f, 0.0f), new Vector3(0.0f, 1.0f, 0.0f));
 
         perspective = Matrix4x4.CreatePerspectiveFieldOfView(MathF.PI / 2.0f, 1.0f, 1.0f, 100.0f);
 
         end = Matrix4x4.CreateTranslation(centerPoint.X, centerPoint.Y, 0.0f);
     }
 
-    private static Matrix4x4 SetMatrixOrigin(Matrix4x4 matrix, Vector2 origin)
+    private static Matrix4x4 SetMatrixOrigin(Matrix4x4 matrix, Vector3 origin)
     {
         matrix.M41 = origin.X - (matrix.M11 * origin.X) - (matrix.M21 * origin.Y);
         matrix.M42 = origin.Y - (matrix.M12 * origin.X) - (matrix.M22 * origin.Y);
+        matrix.M43 = origin.Z - (matrix.M13 * origin.X) - (matrix.M23 * origin.Y);
 
-        return Matrix4x4.CreateTranslation(0.0f, 0.0f, -1.0f) * matrix * Matrix4x4.CreateTranslation(0.0f, 0.0f, 1.0f);
+        return matrix;
     }
 }

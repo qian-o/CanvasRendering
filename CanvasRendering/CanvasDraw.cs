@@ -68,7 +68,7 @@ public unsafe static class CanvasDraw
             Text = "Z 轴 旋转"
         };
 
-        Orthographic = Matrix4x4.CreateOrthographicOffCenter(0.0f, Width, Height, 0.0f, 0.0f, 1.0f);
+        Orthographic = Matrix4x4.CreateOrthographicOffCenter(0.0f, Width, Height, 0.0f, 1.0f, -1.0f);
     }
 
     public static void Resize(Vector2D<int> obj)
@@ -78,7 +78,7 @@ public unsafe static class CanvasDraw
 
         _gl.Viewport(0, 0, (uint)Width, (uint)Height);
 
-        Orthographic = Matrix4x4.CreateOrthographicOffCenter(0.0f, Width, Height, 0.0f, 0.0f, 1.0f);
+        Orthographic = Matrix4x4.CreateOrthographicOffCenter(0.0f, Width, Height, 0.0f, 1.0f, -1.0f);
     }
 
     public static void Render(double obj)
@@ -89,13 +89,13 @@ public unsafe static class CanvasDraw
         _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
         _c1.Transform = Matrix4x4.CreateRotationX(_angle * MathF.PI / 180);
-        _c1.TransformOrigin = new Vector2(0.5f, 0.5f);
+        _c1.TransformOrigin = new Vector3(0.5f, 0.5f, 0.0f);
 
         _c2.Transform = Matrix4x4.CreateRotationY(_angle * MathF.PI / 180);
-        _c2.TransformOrigin = new Vector2(0.5f, 0.5f);
+        _c2.TransformOrigin = new Vector3(0.5f, 0.5f, 0.0f);
 
         _c3.Transform = Matrix4x4.CreateRotationZ(_angle * MathF.PI / 180);
-        _c3.TransformOrigin = new Vector2(0.5f, 0.5f);
+        _c3.TransformOrigin = new Vector3(0.5f, 0.5f, 0.0f);
 
         _c1.StartRender();
         _c1.DrawOnWindow(_textureProgram);
