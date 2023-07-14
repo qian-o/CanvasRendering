@@ -68,7 +68,7 @@ public unsafe static class CanvasDraw
             Text = "Z 轴 旋转"
         };
 
-        Orthographic = Matrix4x4.CreateOrthographicOffCenter(0.0f, Width, Height, 0.0f, 1.0f, -1.0f);
+        Orthographic = Matrix4x4.CreateOrthographicOffCenter(0.0f, Width, Height, 0.0f, 0.0f, 1.0f);
     }
 
     public static void Resize(Vector2D<int> obj)
@@ -78,7 +78,7 @@ public unsafe static class CanvasDraw
 
         _gl.Viewport(0, 0, (uint)Width, (uint)Height);
 
-        Orthographic = Matrix4x4.CreateOrthographicOffCenter(0.0f, Width, Height, 0.0f, 1.0f, -1.0f);
+        Orthographic = Matrix4x4.CreateOrthographicOffCenter(0.0f, Width, Height, 0.0f, 0.0f, 1.0f);
     }
 
     public static void Render(double obj)

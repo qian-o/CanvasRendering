@@ -138,7 +138,7 @@ public unsafe class BaseControl
 
         transform = SetMatrixOrigin(Transform, originPoint);
 
-        view = Matrix4x4.CreateLookAt(new Vector3(0.0f, 0.0f, 1.5f), new Vector3(0.0f, 0.0f, 0.0f), new Vector3(0.0f, 1.0f, 0.0f));
+        view = Matrix4x4.CreateLookAt(new Vector3(0.0f, 0.0f, 1.0f), new Vector3(0.0f, 0.0f, 0.0f), new Vector3(0.0f, 1.0f, 0.0f));
 
         perspective = Matrix4x4.CreatePerspectiveFieldOfView(MathF.PI / 2.0f, 1.0f, 1.0f, 100.0f);
 
