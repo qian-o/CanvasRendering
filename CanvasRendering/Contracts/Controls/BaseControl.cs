@@ -72,11 +72,18 @@ public unsafe class BaseControl
     /// <param name="windowWidth">窗体宽度</param>
     /// <param name="windowHeight">窗体高度</param>
     /// <param name="textureProgram">纹理着色器程序</param>
-    public void DrawOnWindow(ShaderProgram textureProgram)
+    public void DrawOnWindow(ShaderProgram textureProgram, Rectangle<int>? clip = null)
     {
         if (Canvas is not SkiaCanvas canvas)
         {
             return;
+        }
+
+        if (clip != null)
+        {
+            // gl 左下角为原点，所以需要转换一下。
+            _gl.Enable(EnableCap.ScissorTest);
+            _gl.Scissor(clip.Value.Origin.X, CanvasDraw.Height - clip.Value.Max.Y, (uint)clip.Value.Size.X, (uint)clip.Value.Size.Y);
         }
 
         uint positionAttrib = (uint)textureProgram.GetAttribLocation(DefaultVertex.PositionAttrib);
@@ -119,6 +126,8 @@ public unsafe class BaseControl
 
         _gl.DisableVertexAttribArray(positionAttrib);
         _gl.DisableVertexAttribArray(texCoordAttrib);
+
+        _gl.Disable(EnableCap.ScissorTest);
     }
 
     protected virtual void OnRender()

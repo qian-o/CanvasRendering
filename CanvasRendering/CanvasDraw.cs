@@ -68,18 +68,8 @@ public unsafe static class CanvasDraw
             Text = "Z 轴 旋转"
         };
 
-        Vector3 vector = new(100.0f, 100.0f, 0.0f);
-        Orthographic = Matrix4x4.CreateOrthographicOffCenter(0.0f, Width, Height, 0.0f, 0.0f, 1.0f);
-
-        Vector3 calculation1 = Vector3.Transform(vector, Matrix4x4.CreateRotationX(50.0f * MathF.PI / 180, new Vector3(50.0f, 50.0f, 0.0f)));
-
-        calculation1 = Vector3.Transform(calculation1, Orthographic);
-
-        Vector2 vector1 = new(50.0f, 50.0f);
-        vector1 = Vector2.Transform(vector1, Orthographic);
-        Vector3 calculation2 = Vector3.Transform(vector, Orthographic);
-
-        calculation2 = Vector3.Transform(calculation2, Matrix4x4.CreateRotationX(50.0f * MathF.PI / 180, new Vector3(vector1, 0.0f)));
+        // 400.0f为当前绘制矩形最大深度。如果不设置，会导致后绘制的矩形被前面的矩形遮挡。
+        Orthographic = Matrix4x4.CreateOrthographicOffCenter(0.0f, Width, Height, 0.0f, 0.0f, 400.0f);
     }
 
     public static void Resize(Vector2D<int> obj)
@@ -88,8 +78,6 @@ public unsafe static class CanvasDraw
         Height = obj.Y;
 
         _gl.Viewport(0, 0, (uint)Width, (uint)Height);
-
-        Orthographic = Matrix4x4.CreateOrthographicOffCenter(0.0f, Width, Height, 0.0f, 0.0f, 1.0f);
     }
 
     public static void Render(double obj)
@@ -112,7 +100,7 @@ public unsafe static class CanvasDraw
         _c1.DrawOnWindow(_textureProgram);
 
         _c2.StartRender();
-        _c2.DrawOnWindow(_textureProgram);
+        _c2.DrawOnWindow(_textureProgram, new Rectangle<int>(100, 10, 200, 200));
 
         _c3.StartRender();
         _c3.DrawOnWindow(_textureProgram);
