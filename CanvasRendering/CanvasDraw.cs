@@ -61,8 +61,8 @@ public unsafe static class CanvasDraw
 
         _c3 = new TestControl1(_gl)
         {
-            Left = 100,
-            Top = 600,
+            Left = Width - 400,
+            Top = Height - 200,
             Width = 400,
             Height = 200,
             Text = "Z 轴 旋转"
@@ -78,6 +78,12 @@ public unsafe static class CanvasDraw
         Height = obj.Y;
 
         _gl.Viewport(0, 0, (uint)Width, (uint)Height);
+
+        _c3.Left = Width - 400;
+        _c3.Top = Height - 200;
+
+        // 400.0f为当前绘制矩形最大深度。如果不设置，会导致后绘制的矩形被前面的矩形遮挡。
+        Orthographic = Matrix4x4.CreateOrthographicOffCenter(0.0f, Width, Height, 0.0f, 0.0f, 400.0f);
     }
 
     public static void Render(double obj)
