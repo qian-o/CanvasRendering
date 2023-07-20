@@ -37,12 +37,20 @@ public unsafe class BaseControl
         _gl = gl;
     }
 
-    private void UpdateLayout()
+    protected void UpdateLayout()
     {
         if (Width != 0 && Height != 0)
         {
             Canvas?.Dispose();
             Canvas = new SkiaCanvas(_gl, new Vector2D<uint>(Width, Height));
+            IsDirtyArea = true;
+        }
+    }
+
+    protected void UpdateRender()
+    {
+        if (Width != 0 && Height != 0 && Canvas != null)
+        {
             IsDirtyArea = true;
         }
     }
@@ -68,9 +76,7 @@ public unsafe class BaseControl
     /// <summary>
     /// 绘制画板
     /// </summary>
-    /// <param name="windowWidth">窗体宽度</param>
-    /// <param name="windowHeight">窗体高度</param>
-    /// <param name="textureProgram">纹理着色器程序</param>
+    /// <param name="clip">裁剪</param>
     public void DrawOnWindow(ShaderProgram textureProgram, Rectangle<int>? clip = null)
     {
         if (Canvas is not SkiaCanvas canvas)
@@ -132,13 +138,12 @@ public unsafe class BaseControl
 
     private void GetMatrix(out Matrix4X4<float> transform, out Matrix4X4<float> view, out Matrix4X4<float> perspective)
     {
-        Vector2D<float> centerPoint = new(Left + (Width / 2.0f), Top + (Height / 2.0f));
-        centerPoint = Vector2D.Transform(centerPoint, CanvasDraw.Orthographic);
+        float max = new float[] { Width, Height }.Max();
 
-        transform = Transform * Matrix4X4.CreateTranslation(centerPoint.X, centerPoint.Y, 0.0f);
+        transform = Transform * Matrix4X4.CreateScale(1.0f, 1.0f, max / 2.0f / 1000000.0f) * Matrix4X4.CreateTranslation(new Vector3D<float>(Left - (CanvasDraw.Width - Width) / 2.0f, Top - (CanvasDraw.Height - Height) / 2.0f, 0.0f));
 
         view = Matrix4X4.CreateLookAt(new Vector3D<float>(0.0f, 0.0f, 1.0f), new Vector3D<float>(0.0f, 0.0f, 0.0f), new Vector3D<float>(0.0f, 1.0f, 0.0f));
 
-        perspective = Matrix4X4.CreatePerspectiveFieldOfView(MathF.PI / 2.0f, 1.0f, 1.0f, 100.0f);
+        perspective = Matrix4X4.CreatePerspectiveOffCenter(0.0f, CanvasDraw.Width, CanvasDraw.Height, 0.0f, 1.0f, 100.0f);
     }
 }

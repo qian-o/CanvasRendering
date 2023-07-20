@@ -16,7 +16,9 @@ public unsafe static class CanvasDraw
     private static TestControl1 _c1;
     private static TestControl1 _c2;
     private static TestControl1 _c3;
+    private static FpsControl fpsControl;
     private static int _angle;
+    private static bool isPointerDown;
 
     public static int Width { get; set; }
 
@@ -25,8 +27,6 @@ public unsafe static class CanvasDraw
     public static string FontPath { get; set; }
 
     public static int Fps { get; set; }
-
-    public static Matrix4X4<float> Orthographic { get; set; }
 
     public static void Load(GL gl, int width, int height)
     {
@@ -41,8 +41,8 @@ public unsafe static class CanvasDraw
         Height = height;
         _c1 = new TestControl1(_gl)
         {
-            Left = 0,
-            Top = 0,
+            Left = 100,
+            Top = 100,
             Width = 200,
             Height = 400,
             Text = "X 轴 旋转"
@@ -50,12 +50,11 @@ public unsafe static class CanvasDraw
 
         _c2 = new TestControl1(_gl)
         {
-            Left = 100,
+            Left = Width - 400,
             Top = 100,
             Width = 400,
             Height = 200,
-            Text = "Y 轴 旋转",
-            Fill = Color.Transparent
+            Text = "Y 轴 旋转"
         };
 
         _c3 = new TestControl1(_gl)
@@ -67,8 +66,7 @@ public unsafe static class CanvasDraw
             Text = "Z 轴 旋转"
         };
 
-        // 400.0f为当前绘制矩形最大深度。如果不设置，会导致后绘制的矩形被前面的矩形遮挡。
-        Orthographic = Matrix4X4.CreateOrthographicOffCenter(0.0f, Width, Height, 0.0f, 0.0f, 1.0f);
+        fpsControl = new FpsControl(_gl);
     }
 
     public static void Resize(Vector2D<int> obj)
@@ -77,12 +75,6 @@ public unsafe static class CanvasDraw
         Height = obj.Y;
 
         _gl.Viewport(0, 0, (uint)Width, (uint)Height);
-
-        _c3.Left = Width - 400;
-        _c3.Top = Height - 200;
-
-        // 400.0f为当前绘制矩形最大深度。如果不设置，会导致后绘制的矩形被前面的矩形遮挡。
-        Orthographic = Matrix4X4.CreateOrthographicOffCenter(0.0f, Width, Height, 0.0f, 0.0f, 1.0f);
     }
 
     public static void Render(double obj)
@@ -92,28 +84,42 @@ public unsafe static class CanvasDraw
         _gl.ClearColor(Color.White);
         _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
-        //_c1.Transform = Matrix4x4.CreateRotationX(_angle * MathF.PI / 180);
-        //_c1.TransformOrigin = new Vector3(0.0f, 0.0f, 0.0f);
+        _c1.Transform = Matrix4X4.CreateRotationX(_angle * MathF.PI / 180, new Vector3D<float>(Width / 2.0f, Height / 2.0f, 0.0f));
+        _c1.TransformOrigin = new(0.0f, 0.0f, 0.0f);
 
-        //_c2.Transform = Matrix4x4.CreateRotationY(_angle * MathF.PI / 180);
-        //_c2.TransformOrigin = new Vector3(0.0f, 0.0f, 0.0f);
+        _c2.Transform = Matrix4X4.CreateRotationY(_angle * MathF.PI / 180, new Vector3D<float>(Width / 2.0f, Height / 2.0f, 0.0f));
+        _c2.TransformOrigin = new(0.0f, 0.0f, 0.0f);
 
-        //_c3.Transform = Matrix4X4.CreateRotationZ(_angle * MathF.PI / 180);
-        //_c3.TransformOrigin = new(0.0f, 0.0f, 0.0f);
+        _c3.Transform = Matrix4X4.CreateRotationZ(_angle * MathF.PI / 180, new Vector3D<float>(Width / 2.0f, Height / 2.0f, 0.0f));
+        _c3.TransformOrigin = new(0.0f, 0.0f, 0.0f);
 
-        //_c1.StartRender();
-        //_c1.DrawOnWindow(_textureProgram);
+        _c1.StartRender();
+        _c1.DrawOnWindow(_textureProgram);
 
-        //_c2.StartRender();
-        //_c2.DrawOnWindow(_textureProgram);
+        _c2.StartRender();
+        _c2.DrawOnWindow(_textureProgram);
 
         _c3.StartRender();
         _c3.DrawOnWindow(_textureProgram);
 
-        _angle += 1;
-        if (_angle == 360)
+        fpsControl.StartRender();
+        fpsControl.DrawOnWindow(_textureProgram);
+    }
+
+    public static void Update(double obj)
+    {
+        _c2.Left = Width - 400;
+        _c3.Left = Width - 400;
+        _c3.Top = Height - 200;
+        fpsControl.Fps = Fps;
+
+        if (isPointerDown)
         {
-            _angle = 0;
+            _angle += 1;
+            if (_angle == 360)
+            {
+                _angle = 0;
+            }
         }
 
         if (fpsSample.Count == 60)
@@ -124,5 +130,15 @@ public unsafe static class CanvasDraw
         }
 
         fpsSample.Add(Convert.ToInt32(1 / obj));
+    }
+
+    public static void PointerDown()
+    {
+        isPointerDown = true;
+    }
+
+    public static void PointerUp()
+    {
+        isPointerDown = false;
     }
 }

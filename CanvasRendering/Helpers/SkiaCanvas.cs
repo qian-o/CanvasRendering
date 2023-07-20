@@ -259,20 +259,12 @@ public unsafe class SkiaCanvas : ICanvas
     public void UpdateVertexBuffer(Rectangle<float> rectangle)
     {
         Vector3D<float> point1 = new(rectangle.Origin.X, rectangle.Origin.Y, 0.0f);
-        point1 = Vector3D.Transform(point1, CanvasDraw.Orthographic);
-        point1.Z = 0;
 
         Vector3D<float> point2 = new(rectangle.Origin.X, rectangle.Max.Y, 0.0f);
-        point2 = Vector3D.Transform(point2, CanvasDraw.Orthographic);
-        point2.Z = 0;
 
         Vector3D<float> point3 = new(rectangle.Max.X, rectangle.Origin.Y, 0.0f);
-        point3 = Vector3D.Transform(point3, CanvasDraw.Orthographic);
-        point3.Z = 0;
 
         Vector3D<float> point4 = new(rectangle.Max.X, rectangle.Max.Y, 0.0f);
-        point4 = Vector3D.Transform(point4, CanvasDraw.Orthographic);
-        point4.Z = 0;
 
         float[] vertices = new float[] {
             point1.X, point1.Y, point1.Z,

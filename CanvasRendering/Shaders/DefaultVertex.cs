@@ -17,8 +17,10 @@ uniform mat4 perspective;
 out vec2 fragTexCoord;
 
 void main() {
+   
+   vec4 pos = transform * vec4(position, 1.0);
 
-   gl_Position = perspective * view * transform * vec4(position, 1.0);
+   gl_Position = perspective * view * pos;
 
    fragTexCoord = texCoord;
 }";
