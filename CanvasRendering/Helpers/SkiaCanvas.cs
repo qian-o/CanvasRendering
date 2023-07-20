@@ -3,7 +3,6 @@ using Silk.NET.Maths;
 using Silk.NET.OpenGLES;
 using SkiaSharp;
 using System.Drawing;
-using System.Numerics;
 
 namespace CanvasRendering.Helpers;
 
@@ -259,13 +258,21 @@ public unsafe class SkiaCanvas : ICanvas
     /// <param name="rectangle">绘制该画板时的坐标及大小</param>
     public void UpdateVertexBuffer(Rectangle<float> rectangle)
     {
-        Vector3 point1 = new(rectangle.Origin.X, rectangle.Origin.Y, 0.0f);
+        Vector3D<float> point1 = new(rectangle.Origin.X, rectangle.Origin.Y, 0.0f);
+        point1 = Vector3D.Transform(point1, CanvasDraw.Orthographic);
+        point1.Z = 0;
 
-        Vector3 point2 = new(rectangle.Origin.X, rectangle.Max.Y, 0.0f);
+        Vector3D<float> point2 = new(rectangle.Origin.X, rectangle.Max.Y, 0.0f);
+        point2 = Vector3D.Transform(point2, CanvasDraw.Orthographic);
+        point2.Z = 0;
 
-        Vector3 point3 = new(rectangle.Max.X, rectangle.Origin.Y, 0.0f);
+        Vector3D<float> point3 = new(rectangle.Max.X, rectangle.Origin.Y, 0.0f);
+        point3 = Vector3D.Transform(point3, CanvasDraw.Orthographic);
+        point3.Z = 0;
 
-        Vector3 point4 = new(rectangle.Max.X, rectangle.Max.Y, 0.0f);
+        Vector3D<float> point4 = new(rectangle.Max.X, rectangle.Max.Y, 0.0f);
+        point4 = Vector3D.Transform(point4, CanvasDraw.Orthographic);
+        point4.Z = 0;
 
         float[] vertices = new float[] {
             point1.X, point1.Y, point1.Z,
@@ -284,13 +291,13 @@ public unsafe class SkiaCanvas : ICanvas
     /// </summary>
     public void UpdateTexCoordBuffer()
     {
-        Vector2 point1 = new(0, 0);
+        Vector2D<float> point1 = new(0, 0);
 
-        Vector2 point2 = new(0, 1);
+        Vector2D<float> point2 = new(0, 1);
 
-        Vector2 point3 = new(1, 0);
+        Vector2D<float> point3 = new(1, 0);
 
-        Vector2 point4 = new(1, 1);
+        Vector2D<float> point4 = new(1, 1);
 
         float[] texCoords = new float[] {
             point1.X, point1.Y,

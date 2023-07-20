@@ -2,7 +2,6 @@
 using CanvasRendering.Shaders;
 using Silk.NET.Maths;
 using Silk.NET.OpenGLES;
-using System.Numerics;
 
 namespace CanvasRendering.Contracts.Controls;
 
@@ -14,8 +13,8 @@ public unsafe class BaseControl
     private float top;
     private uint width;
     private uint height;
-    private Matrix4x4 transform = Matrix4x4.Identity;
-    private Vector3 transformOrigin = new(0.0f, 0.0f, 0.0f);
+    private Matrix4X4<float> transform = Matrix4X4<float>.Identity;
+    private Vector3D<float> transformOrigin = new(0.0f, 0.0f, 0.0f);
 
     public float Left { get => left; set { left = value; UpdateLayout(); } }
 
@@ -25,9 +24,9 @@ public unsafe class BaseControl
 
     public uint Height { get => height; set { height = value; UpdateLayout(); } }
 
-    public Matrix4x4 Transform { get => transform; set { transform = value; UpdateLayout(); } }
+    public Matrix4X4<float> Transform { get => transform; set { transform = value; UpdateLayout(); } }
 
-    public Vector3 TransformOrigin { get => transformOrigin; set { transformOrigin = value; UpdateLayout(); } }
+    public Vector3D<float> TransformOrigin { get => transformOrigin; set { transformOrigin = value; UpdateLayout(); } }
 
     public ICanvas Canvas { get; private set; }
 
@@ -94,16 +93,13 @@ public unsafe class BaseControl
 
         textureProgram.Enable();
 
-        GetMatrix(out Matrix4x4 orthographic, out Matrix4x4 begin, out Matrix4x4 transform, out Matrix4x4 view, out Matrix4x4 perspective, out Matrix4x4 end);
+        GetMatrix(out Matrix4X4<float> transform, out Matrix4X4<float> view, out Matrix4X4<float> perspective);
 
-        _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.OrthographicUniform), 1, false, (float*)&orthographic);
-        _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.BeginUniform), 1, false, (float*)&begin);
         _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.TransformUniform), 1, false, (float*)&transform);
         _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.ViewUniform), 1, false, (float*)&view);
         _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.PerspectiveUniform), 1, false, (float*)&perspective);
-        _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.EndUniform), 1, false, (float*)&end);
 
-        canvas.UpdateVertexBuffer(new Rectangle<float>(Left, Top, Width, Height));
+        canvas.UpdateVertexBuffer(new Rectangle<float>((CanvasDraw.Width - Width) / 2.0f, (CanvasDraw.Height - Height) / 2.0f, Width, Height));
         canvas.UpdateTexCoordBuffer();
 
         _gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
@@ -134,32 +130,15 @@ public unsafe class BaseControl
     {
     }
 
-    private void GetMatrix(out Matrix4x4 orthographic, out Matrix4x4 begin, out Matrix4x4 transform, out Matrix4x4 view, out Matrix4x4 perspective, out Matrix4x4 end)
+    private void GetMatrix(out Matrix4X4<float> transform, out Matrix4X4<float> view, out Matrix4X4<float> perspective)
     {
-        Vector2 centerPoint = new(Left + (Width / 2.0f), Top + (Height / 2.0f));
-        centerPoint = Vector2.Transform(centerPoint, CanvasDraw.Orthographic);
+        Vector2D<float> centerPoint = new(Left + (Width / 2.0f), Top + (Height / 2.0f));
+        centerPoint = Vector2D.Transform(centerPoint, CanvasDraw.Orthographic);
 
-        Vector3 originPoint = new(Left + (TransformOrigin.X * Width), Top + (TransformOrigin.Y * Height), TransformOrigin.Z);
+        transform = Transform * Matrix4X4.CreateTranslation(centerPoint.X, centerPoint.Y, 0.0f);
 
-        orthographic = CanvasDraw.Orthographic;
+        view = Matrix4X4.CreateLookAt(new Vector3D<float>(0.0f, 0.0f, 1.0f), new Vector3D<float>(0.0f, 0.0f, 0.0f), new Vector3D<float>(0.0f, 1.0f, 0.0f));
 
-        begin = Matrix4x4.CreateTranslation(-centerPoint.X, -centerPoint.Y, 0.0f);
-
-        transform = SetMatrixOrigin(Transform, originPoint);
-
-        view = Matrix4x4.CreateLookAt(new Vector3(0.0f, 0.0f, 1.0f), new Vector3(0.0f, 0.0f, 0.0f), new Vector3(0.0f, 1.0f, 0.0f));
-
-        perspective = Matrix4x4.CreatePerspectiveFieldOfView(MathF.PI / 2.0f, 1.0f, 1.0f, 100.0f);
-
-        end = Matrix4x4.CreateTranslation(centerPoint.X, centerPoint.Y, 0.0f);
-    }
-
-    private static Matrix4x4 SetMatrixOrigin(Matrix4x4 matrix, Vector3 origin)
-    {
-        matrix.M41 = origin.X - (matrix.M11 * origin.X) - (matrix.M21 * origin.Y);
-        matrix.M42 = origin.Y - (matrix.M12 * origin.X) - (matrix.M22 * origin.Y);
-        matrix.M43 = origin.Z - (matrix.M13 * origin.X) - (matrix.M23 * origin.Y);
-
-        return matrix;
+        perspective = Matrix4X4.CreatePerspectiveFieldOfView(MathF.PI / 2.0f, 1.0f, 1.0f, 100.0f);
     }
 }
