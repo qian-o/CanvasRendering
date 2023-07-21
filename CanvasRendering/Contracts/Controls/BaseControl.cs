@@ -2,32 +2,48 @@
 using CanvasRendering.Shaders;
 using Silk.NET.Maths;
 using Silk.NET.OpenGLES;
-using System.Numerics;
 
 namespace CanvasRendering.Contracts.Controls;
 
 public unsafe class BaseControl
 {
     private readonly GL _gl;
-
-    private float left;
-    private float top;
     private uint width;
     private uint height;
-    private Matrix4x4 transform = Matrix4x4.Identity;
-    private Vector3 transformOrigin = new(0.0f, 0.0f, 0.0f);
 
-    public float Left { get => left; set { left = value; UpdateLayout(); } }
+    public float Left { get; set; }
 
-    public float Top { get => top; set { top = value; UpdateLayout(); } }
+    public float Top { get; set; }
 
-    public uint Width { get => width; set { width = value; UpdateLayout(); } }
+    public uint Width
+    {
+        get => width;
+        set
+        {
+            if (width != value)
+            {
+                width = value;
+                UpdateLayout();
+            }
+        }
+    }
 
-    public uint Height { get => height; set { height = value; UpdateLayout(); } }
+    public uint Height
+    {
+        get => height;
+        set
+        {
+            if (height != value)
+            {
+                height = value;
+                UpdateLayout();
+            }
+        }
+    }
 
-    public Matrix4x4 Transform { get => transform; set { transform = value; UpdateLayout(); } }
+    public Matrix3X2<float> Transform { get; set; } = Matrix3X2<float>.Identity;
 
-    public Vector3 TransformOrigin { get => transformOrigin; set { transformOrigin = value; UpdateLayout(); } }
+    public Vector2D<float> TransformOrigin { get; set; } = new(0.0f, 0.0f);
 
     public ICanvas Canvas { get; private set; }
 
@@ -38,12 +54,20 @@ public unsafe class BaseControl
         _gl = gl;
     }
 
-    private void UpdateLayout()
+    protected void UpdateLayout()
     {
         if (Width != 0 && Height != 0)
         {
             Canvas?.Dispose();
             Canvas = new SkiaCanvas(_gl, new Vector2D<uint>(Width, Height));
+            IsDirtyArea = true;
+        }
+    }
+
+    protected void UpdateRender()
+    {
+        if (Width != 0 && Height != 0 && Canvas != null)
+        {
             IsDirtyArea = true;
         }
     }
@@ -69,9 +93,7 @@ public unsafe class BaseControl
     /// <summary>
     /// 绘制画板
     /// </summary>
-    /// <param name="windowWidth">窗体宽度</param>
-    /// <param name="windowHeight">窗体高度</param>
-    /// <param name="textureProgram">纹理着色器程序</param>
+    /// <param name="clip">裁剪</param>
     public void DrawOnWindow(ShaderProgram textureProgram, Rectangle<int>? clip = null)
     {
         if (Canvas is not SkiaCanvas canvas)
@@ -94,16 +116,13 @@ public unsafe class BaseControl
 
         textureProgram.Enable();
 
-        GetMatrix(out Matrix4x4 orthographic, out Matrix4x4 begin, out Matrix4x4 transform, out Matrix4x4 view, out Matrix4x4 perspective, out Matrix4x4 end);
+        GetMatrix(out Matrix4X4<float> transform, out Matrix4X4<float> view, out Matrix4X4<float> perspective);
 
-        _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.OrthographicUniform), 1, false, (float*)&orthographic);
-        _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.BeginUniform), 1, false, (float*)&begin);
         _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.TransformUniform), 1, false, (float*)&transform);
         _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.ViewUniform), 1, false, (float*)&view);
         _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.PerspectiveUniform), 1, false, (float*)&perspective);
-        _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.EndUniform), 1, false, (float*)&end);
 
-        canvas.UpdateVertexBuffer(new Rectangle<float>(Left, Top, Width, Height));
+        canvas.UpdateVertexBuffer(new Rectangle<float>(0.0f, 0.0f, Width, Height));
         canvas.UpdateTexCoordBuffer();
 
         _gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
@@ -134,32 +153,12 @@ public unsafe class BaseControl
     {
     }
 
-    private void GetMatrix(out Matrix4x4 orthographic, out Matrix4x4 begin, out Matrix4x4 transform, out Matrix4x4 view, out Matrix4x4 perspective, out Matrix4x4 end)
+    private void GetMatrix(out Matrix4X4<float> transform, out Matrix4X4<float> view, out Matrix4X4<float> perspective)
     {
-        Vector2 centerPoint = new(Left + (Width / 2.0f), Top + (Height / 2.0f));
-        centerPoint = Vector2.Transform(centerPoint, CanvasDraw.Orthographic);
+        transform = new Matrix4X4<float>(Transform) * Matrix4X4.CreateTranslation(new Vector3D<float>(Left, Top, 0.0f));
 
-        Vector3 originPoint = new(Left + (TransformOrigin.X * Width), Top + (TransformOrigin.Y * Height), TransformOrigin.Z);
+        view = Matrix4X4.CreateLookAt(new Vector3D<float>(0.0f, 0.0f, 1.0f), new Vector3D<float>(0.0f, 0.0f, 0.0f), new Vector3D<float>(0.0f, 1.0f, 0.0f));
 
-        orthographic = CanvasDraw.Orthographic;
-
-        begin = Matrix4x4.CreateTranslation(-centerPoint.X, -centerPoint.Y, 0.0f);
-
-        transform = SetMatrixOrigin(Transform, originPoint);
-
-        view = Matrix4x4.CreateLookAt(new Vector3(0.0f, 0.0f, 1.0f), new Vector3(0.0f, 0.0f, 0.0f), new Vector3(0.0f, 1.0f, 0.0f));
-
-        perspective = Matrix4x4.CreatePerspectiveFieldOfView(MathF.PI / 2.0f, 1.0f, 1.0f, 100.0f);
-
-        end = Matrix4x4.CreateTranslation(centerPoint.X, centerPoint.Y, 0.0f);
-    }
-
-    private static Matrix4x4 SetMatrixOrigin(Matrix4x4 matrix, Vector3 origin)
-    {
-        matrix.M41 = origin.X - (matrix.M11 * origin.X) - (matrix.M21 * origin.Y);
-        matrix.M42 = origin.Y - (matrix.M12 * origin.X) - (matrix.M22 * origin.Y);
-        matrix.M43 = origin.Z - (matrix.M13 * origin.X) - (matrix.M23 * origin.Y);
-
-        return matrix;
+        perspective = Matrix4X4.CreatePerspectiveOffCenter(0.0f, CanvasDraw.Width, CanvasDraw.Height, 0.0f, 1.0f, 100.0f);
     }
 }
