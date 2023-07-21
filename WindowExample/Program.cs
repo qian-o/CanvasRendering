@@ -24,7 +24,7 @@ public class Program
         options.Size = new Vector2D<int>(800, 600);
         options.API = new GraphicsAPI(ContextAPI.OpenGLES, new APIVersion(3, 2));
         options.ShouldSwapAutomatically = true;
-        options.Samples = 2;
+        options.Samples = 16;
         options.VSync = true;
         window = Window.Create(options);
 

@@ -18,9 +18,9 @@ out vec2 fragTexCoord;
 
 void main() {
    
-   vec4 pos = transform * vec4(position, 1.0);
+   vec4 transformPosition = transform * vec4(position, 1.0);
 
-   gl_Position = perspective * view * pos;
+   gl_Position = perspective * view * vec4(transformPosition.xy, position.z, 1.0);
 
    fragTexCoord = texCoord;
 }";
