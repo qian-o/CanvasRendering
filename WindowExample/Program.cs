@@ -23,9 +23,7 @@ public class Program
         options.Title = "Texture Rendering";
         options.Size = new Vector2D<int>(800, 600);
         options.API = new GraphicsAPI(ContextAPI.OpenGLES, new APIVersion(3, 2));
-        options.ShouldSwapAutomatically = true;
         options.Samples = 16;
-        options.VSync = true;
         window = Window.Create(options);
 
         window.Load += Window_Load;
