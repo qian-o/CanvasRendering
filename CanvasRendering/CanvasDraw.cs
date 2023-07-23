@@ -30,6 +30,10 @@ public unsafe static class CanvasDraw
 
     public static int Height { get; set; }
 
+    public static Matrix4X4<float> View { get; set; }
+
+    public static Matrix4X4<float> Projection { get; set; }
+
     public static string FontPath { get; set; }
 
     public static void Load(GL gl, int width, int height)
@@ -43,6 +47,8 @@ public unsafe static class CanvasDraw
 
         Width = width;
         Height = height;
+        View = Matrix4X4.CreateLookAt(new Vector3D<float>(0.0f, 0.0f, 1.0f), new Vector3D<float>(0.0f, 0.0f, 0.0f), new Vector3D<float>(0.0f, 1.0f, 0.0f));
+        Projection = Matrix4X4.CreatePerspectiveOffCenter(0.0f, Width, Height, 0.0f, 1.0f, 100.0f);
 
         _c1 = new TestControl1(_gl)
         {
@@ -73,6 +79,8 @@ public unsafe static class CanvasDraw
         Height = obj.Y;
 
         _gl.Viewport(0, 0, (uint)Width, (uint)Height);
+
+        Projection = Matrix4X4.CreatePerspectiveOffCenter(0.0f, Width, Height, 0.0f, 1.0f, 100.0f);
     }
 
     public static void Render(double obj)

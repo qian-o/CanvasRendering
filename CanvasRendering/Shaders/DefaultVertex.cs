@@ -12,7 +12,7 @@ layout(location = 1) in vec2 texCoord;
 
 uniform mat4 transform;
 uniform mat4 view;
-uniform mat4 perspective;
+uniform mat4 projection;
 
 out vec2 fragTexCoord;
 
@@ -20,7 +20,7 @@ void main() {
    
    vec4 transformPosition = transform * vec4(position, 1.0);
 
-   gl_Position = perspective * view * vec4(transformPosition.xy, position.z, 1.0);
+   gl_Position = projection * view * vec4(transformPosition.xy, position.z, 1.0);
 
    fragTexCoord = texCoord;
 }";
@@ -33,5 +33,5 @@ void main() {
 
     public const string ViewUniform = @"view";
 
-    public const string PerspectiveUniform = @"perspective";
+    public const string ProjectionUniform = @"projection";
 }

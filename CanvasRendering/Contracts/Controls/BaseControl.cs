@@ -116,11 +116,11 @@ public unsafe class BaseControl
 
         textureProgram.Enable();
 
-        GetMatrix(out Matrix4X4<float> transform, out Matrix4X4<float> view, out Matrix4X4<float> perspective);
+        GetMatrix(out Matrix4X4<float> transform, out Matrix4X4<float> view, out Matrix4X4<float> projection);
 
         _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.TransformUniform), 1, false, (float*)&transform);
         _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.ViewUniform), 1, false, (float*)&view);
-        _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.PerspectiveUniform), 1, false, (float*)&perspective);
+        _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.ProjectionUniform), 1, false, (float*)&projection);
 
         canvas.UpdateVertexBuffer(new Rectangle<float>(0.0f, 0.0f, Width, Height));
         canvas.UpdateTexCoordBuffer();
@@ -153,12 +153,12 @@ public unsafe class BaseControl
     {
     }
 
-    private void GetMatrix(out Matrix4X4<float> transform, out Matrix4X4<float> view, out Matrix4X4<float> perspective)
+    private void GetMatrix(out Matrix4X4<float> transform, out Matrix4X4<float> view, out Matrix4X4<float> projection)
     {
         transform = new Matrix4X4<float>(Transform) * Matrix4X4.CreateTranslation(new Vector3D<float>(Left, Top, 0.0f));
 
-        view = Matrix4X4.CreateLookAt(new Vector3D<float>(0.0f, 0.0f, 1.0f), new Vector3D<float>(0.0f, 0.0f, 0.0f), new Vector3D<float>(0.0f, 1.0f, 0.0f));
+        view = CanvasDraw.View;
 
-        perspective = Matrix4X4.CreatePerspectiveOffCenter(0.0f, CanvasDraw.Width, CanvasDraw.Height, 0.0f, 1.0f, 100.0f);
+        projection = CanvasDraw.Projection;
     }
 }
