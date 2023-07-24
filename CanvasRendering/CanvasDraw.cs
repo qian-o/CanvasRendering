@@ -173,7 +173,7 @@ public unsafe static class CanvasDraw
             }
         }
 
-        if (fpsSample.Count == 60)
+        if (fpsSample.Count == 100)
         {
             fpsControl.Fps = Convert.ToInt32(fpsSample.Average());
 
