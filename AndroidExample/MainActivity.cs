@@ -30,7 +30,7 @@ public class MainActivity : SilkActivity
         view = Silk.NET.Windowing.Window.GetView(options);
 
         view.Load += View_Load;
-        view.Resize += (d) => { CanvasDraw.Resize(d); view.DoRender(); };
+        view.Resize += (d) => { CanvasDraw.Resize(d); view.DoUpdate(); view.DoRender(); };
         view.Render += CanvasDraw.Render;
         view.Update += CanvasDraw.Update;
 

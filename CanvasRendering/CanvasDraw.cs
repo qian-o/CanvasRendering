@@ -8,7 +8,7 @@ namespace CanvasRendering;
 
 public unsafe static class CanvasDraw
 {
-    private static readonly List<int> fpsSample = new();
+    private static readonly List<double> fpsSample = new();
 
     private static GL _gl;
     private static ShaderHelper _shaderHelper;
@@ -85,18 +85,8 @@ public unsafe static class CanvasDraw
 
     public static void Render(double obj)
     {
-        _ = obj;
-
         _gl.ClearColor(Color.White);
         _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
-
-        _c1.Transform = Matrix3X2.CreateRotation(_radians, new Vector2D<float>(_c1.Width / 2.0f, _c1.Height / 2.0f));
-
-        _c2.Transform = Matrix3X2.CreateScale(_scale, new Vector2D<float>(_c2.Width / 2.0f, _c2.Height / 2.0f));
-
-        _c3.Transform = Matrix3X2.CreateSkew(_radiansX, _radiansY, new Vector2D<float>(_c3.Width / 2.0f, _c3.Height / 2.0f));
-
-        _c4.Transform = Matrix3X2.CreateTranslation(new Vector2D<float>(_translation, _translation));
 
         _c1.StartRender();
         _c1.DrawOnWindow(_textureProgram);
@@ -112,10 +102,14 @@ public unsafe static class CanvasDraw
 
         fpsControl.StartRender();
         fpsControl.DrawOnWindow(_textureProgram);
+
+        fpsSample.Add(1.0d / obj);
     }
 
     public static void Update(double obj)
     {
+        _ = obj;
+
         int w = Width / 2;
         int h = Height / 2;
 
@@ -173,14 +167,17 @@ public unsafe static class CanvasDraw
             }
         }
 
+        _c1.Transform = Matrix3X2.CreateRotation(_radians, new Vector2D<float>(_c1.Width / 2.0f, _c1.Height / 2.0f));
+        _c2.Transform = Matrix3X2.CreateScale(_scale, new Vector2D<float>(_c2.Width / 2.0f, _c2.Height / 2.0f));
+        _c3.Transform = Matrix3X2.CreateSkew(_radiansX, _radiansY, new Vector2D<float>(_c3.Width / 2.0f, _c3.Height / 2.0f));
+        _c4.Transform = Matrix3X2.CreateTranslation(new Vector2D<float>(_translation, _translation));
+
         if (fpsSample.Count == 100)
         {
             fpsControl.Fps = Convert.ToInt32(fpsSample.Average());
 
             fpsSample.Clear();
         }
-
-        fpsSample.Add(Convert.ToInt32(1 / obj));
     }
 
     public static void PointerDown()

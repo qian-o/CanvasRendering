@@ -27,7 +27,7 @@ public class Program
         window = Window.Create(options);
 
         window.Load += Window_Load;
-        window.Resize += (d) => { CanvasDraw.Resize(d); window.DoRender(); };
+        window.Resize += (d) => { CanvasDraw.Resize(d); window.DoUpdate(); window.DoRender(); };
         window.Render += CanvasDraw.Render;
         window.Update += CanvasDraw.Update;
 

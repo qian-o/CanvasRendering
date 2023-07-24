@@ -47,6 +47,8 @@ public unsafe class BaseControl
 
     public ICanvas Canvas { get; private set; }
 
+    public bool IsUpdateLayout { get; private set; }
+
     public bool IsDirtyArea { get; private set; }
 
     public BaseControl(GL gl)
@@ -58,8 +60,7 @@ public unsafe class BaseControl
     {
         if (Width != 0 && Height != 0)
         {
-            Canvas?.Dispose();
-            Canvas = new SkiaCanvas(_gl, new Vector2D<uint>(Width, Height));
+            IsUpdateLayout = true;
             IsDirtyArea = true;
         }
     }
@@ -79,6 +80,14 @@ public unsafe class BaseControl
     {
         if (IsDirtyArea)
         {
+            if (IsUpdateLayout)
+            {
+                Canvas?.Dispose();
+                Canvas = new SkiaCanvas(_gl, new Vector2D<uint>(Width, Height));
+
+                IsUpdateLayout = false;
+            }
+
             Canvas.Begin();
             {
                 Canvas.Clear();
