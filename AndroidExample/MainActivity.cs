@@ -26,7 +26,7 @@ public class MainActivity : SilkActivity
 
         ViewOptions options = ViewOptions.Default;
         options.API = new GraphicsAPI(ContextAPI.OpenGLES, new APIVersion(3, 2));
-        options.Samples = 8;
+        options.Samples = 4;
         view = Silk.NET.Windowing.Window.GetView(options);
 
         view.Load += View_Load;
