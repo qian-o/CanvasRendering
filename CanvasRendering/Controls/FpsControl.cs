@@ -18,7 +18,7 @@ public class FpsControl : BaseControl
 
     protected override void OnRender()
     {
-        Canvas.DrawFill(Color.Black);
+        Canvas.DrawFill(Color.Transparent);
 
         Canvas.DrawString(new Point(25, 75), Fps.ToString(), 50, Color.Green, CanvasDraw.FontPath);
     }

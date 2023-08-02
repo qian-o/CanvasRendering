@@ -113,8 +113,6 @@ public unsafe static class CanvasDraw
 
     public static void Update(double obj)
     {
-        _ = obj;
-
         int w = Width / 2;
         int h = Height / 2;
 
@@ -218,14 +216,14 @@ public unsafe static class CanvasDraw
             Camera.Position += Camera.Right * 1.5f * (float)obj;
         }
 
-        if (Keyboard.IsKeyPressed(Key.E))
-        {
-            Camera.Position += Camera.Up * 1.5f * (float)obj;
-        }
-
         if (Keyboard.IsKeyPressed(Key.Q))
         {
             Camera.Position -= Camera.Up * 1.5f * (float)obj;
+        }
+
+        if (Keyboard.IsKeyPressed(Key.E))
+        {
+            Camera.Position += Camera.Up * 1.5f * (float)obj;
         }
 
         _c1.Transform = Matrix3X2.CreateRotation(_radians, new Vector2D<float>(_c1.Width / 2.0f, _c1.Height / 2.0f));
