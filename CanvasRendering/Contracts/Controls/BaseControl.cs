@@ -164,10 +164,13 @@ public unsafe class BaseControl
 
     private void GetMatrix(out Matrix4X4<float> transform, out Matrix4X4<float> view, out Matrix4X4<float> projection)
     {
-        transform = new Matrix4X4<float>(Transform) * Matrix4X4.CreateTranslation(new Vector3D<float>(Left, Top, 0.0f));
+        transform = new Matrix4X4<float>(Transform)
+                    * Matrix4X4.CreateTranslation(new Vector3D<float>(Left, Top, 0.0f))
+                    * Matrix4X4.CreateScale(new Vector3D<float>(2.0f / CanvasDraw.Width, -(2.0f / CanvasDraw.Height), 0.0f), new Vector3D<float>(0, 0, 0.0f))
+                    * Matrix4X4.CreateTranslation(new Vector3D<float>(-1.0f, 1.0f, 0.0f));
 
-        view = CanvasDraw.View;
+        view = CanvasDraw.Camera.View;
 
-        projection = CanvasDraw.Projection;
+        projection = CanvasDraw.Camera.Projection;
     }
 }

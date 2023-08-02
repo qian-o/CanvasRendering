@@ -43,7 +43,7 @@ public class MainActivity : SilkActivity
 
         IInputContext inputContext = view.CreateInput();
 
-        inputContext.Mice[0].MouseDown += (_, _) => CanvasDraw.PointerDown();
-        inputContext.Mice[0].MouseUp += (_, _) => CanvasDraw.PointerUp();
+        CanvasDraw.Mouse = inputContext.Mice[0];
+        CanvasDraw.Keyboard = inputContext.Keyboards[0];
     }
 }

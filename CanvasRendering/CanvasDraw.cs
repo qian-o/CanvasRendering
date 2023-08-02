@@ -1,5 +1,6 @@
 ﻿using CanvasRendering.Controls;
 using CanvasRendering.Helpers;
+using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGLES;
 using System.Drawing;
@@ -24,17 +25,20 @@ public unsafe static class CanvasDraw
     private static float _radiansY;
     private static int _translation;
     private static float _scale = 1.0f;
-    private static bool isPointerDown;
+    private static bool firstMove = true;
+    private static Vector2D<float> lastPos;
 
     public static int Width { get; set; }
 
     public static int Height { get; set; }
 
-    public static Matrix4X4<float> View { get; set; }
-
-    public static Matrix4X4<float> Projection { get; set; }
+    public static Camera Camera { get; } = new Camera();
 
     public static string FontPath { get; set; }
+
+    public static IMouse Mouse { get; set; }
+
+    public static IKeyboard Keyboard { get; set; }
 
     public static void Load(GL gl, int width, int height)
     {
@@ -47,8 +51,8 @@ public unsafe static class CanvasDraw
 
         Width = width;
         Height = height;
-        View = Matrix4X4.CreateLookAt(new Vector3D<float>(0.0f, 0.0f, 1.0f), new Vector3D<float>(0.0f, 0.0f, 0.0f), new Vector3D<float>(0.0f, 1.0f, 0.0f));
-        Projection = Matrix4X4.CreatePerspectiveOffCenter(0.0f, Width, Height, 0.0f, 1.0f, 100.0f);
+        Camera.Width = Width;
+        Camera.Height = Height;
 
         _c1 = new TestControl1(_gl)
         {
@@ -80,12 +84,13 @@ public unsafe static class CanvasDraw
 
         _gl.Viewport(0, 0, (uint)Width, (uint)Height);
 
-        Projection = Matrix4X4.CreatePerspectiveOffCenter(0.0f, Width, Height, 0.0f, 1.0f, 100.0f);
+        Camera.Width = Width;
+        Camera.Height = Height;
     }
 
     public static void Render(double obj)
     {
-        _gl.ClearColor(Color.White);
+        _gl.ClearColor(Color.Black);
         _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
 
         _c1.StartRender();
@@ -133,7 +138,7 @@ public unsafe static class CanvasDraw
         _c3.Height = Convert.ToUInt32(h / 2);
         _c4.Height = Convert.ToUInt32(h / 2);
 
-        if (isPointerDown)
+        if (Mouse.IsButtonPressed(MouseButton.Left))
         {
             _angle++;
 
@@ -167,6 +172,62 @@ public unsafe static class CanvasDraw
             }
         }
 
+        if (Mouse.IsButtonPressed(MouseButton.Right))
+        {
+            Vector2D<float> vector = new(Mouse.Position.X, Mouse.Position.Y);
+
+            if (firstMove)
+            {
+                lastPos = vector;
+
+                firstMove = false;
+            }
+            else
+            {
+                float deltaX = vector.X - lastPos.X;
+                float deltaY = vector.Y - lastPos.Y;
+
+                Camera.Yaw += deltaX * 0.2f;
+                Camera.Pitch += -deltaY * 0.2f;
+
+                lastPos = vector;
+            }
+        }
+        else
+        {
+            firstMove = true;
+        }
+
+        if (Keyboard.IsKeyPressed(Key.W))
+        {
+            Camera.Position += Camera.Front * 1.5f * (float)obj;
+        }
+
+        if (Keyboard.IsKeyPressed(Key.A))
+        {
+            Camera.Position -= Camera.Right * 1.5f * (float)obj;
+        }
+
+        if (Keyboard.IsKeyPressed(Key.S))
+        {
+            Camera.Position -= Camera.Front * 1.5f * (float)obj;
+        }
+
+        if (Keyboard.IsKeyPressed(Key.D))
+        {
+            Camera.Position += Camera.Right * 1.5f * (float)obj;
+        }
+
+        if (Keyboard.IsKeyPressed(Key.E))
+        {
+            Camera.Position += Camera.Up * 1.5f * (float)obj;
+        }
+
+        if (Keyboard.IsKeyPressed(Key.Q))
+        {
+            Camera.Position -= Camera.Up * 1.5f * (float)obj;
+        }
+
         _c1.Transform = Matrix3X2.CreateRotation(_radians, new Vector2D<float>(_c1.Width / 2.0f, _c1.Height / 2.0f));
         _c2.Transform = Matrix3X2.CreateScale(_scale, new Vector2D<float>(_c2.Width / 2.0f, _c2.Height / 2.0f));
         _c3.Transform = Matrix3X2.CreateSkew(_radiansX, _radiansY, new Vector2D<float>(_c3.Width / 2.0f, _c3.Height / 2.0f));
@@ -178,15 +239,5 @@ public unsafe static class CanvasDraw
 
             fpsSample.Clear();
         }
-    }
-
-    public static void PointerDown()
-    {
-        isPointerDown = true;
-    }
-
-    public static void PointerUp()
-    {
-        isPointerDown = false;
     }
 }
