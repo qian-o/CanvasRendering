@@ -116,8 +116,8 @@ public unsafe static class CanvasDraw
         _c4.StartRender();
         _c4.DrawOnWindow(_textureProgram);
 
-        _uniformGrid.Width = Width;
-        _uniformGrid.Height = Height;
+        _uniformGrid.Width = Width * 4;
+        _uniformGrid.Height = Height * 4;
         _uniformGrid.Render();
 
         foreach (var item in _uniformGrid.Child)
