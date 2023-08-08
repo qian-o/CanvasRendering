@@ -1,9 +1,12 @@
-﻿using System.Drawing;
+﻿using Silk.NET.Maths;
+using System.Drawing;
 
 namespace CanvasRendering.Contracts;
 
 public interface ICanvas : IDisposable
 {
+    void UpdateSize(Vector2D<uint> size);
+
     void Begin();
 
     void End();

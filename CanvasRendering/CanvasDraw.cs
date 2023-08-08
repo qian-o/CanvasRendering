@@ -76,11 +76,11 @@ public unsafe static class CanvasDraw
         };
         _uniformGrid = new UniformGrid()
         {
-            Rows = 10,
+            Rows = 100,
             Columns = 100
         };
 
-        for (int i = 0; i < 1000; i++)
+        for (int i = 0; i < 10000; i++)
         {
             _uniformGrid.Child.Add(new TestControl1(_gl) { Text = (i + 1).ToString() });
         }

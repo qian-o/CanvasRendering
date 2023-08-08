@@ -82,8 +82,14 @@ public unsafe class BaseControl
         {
             if (IsUpdateLayout)
             {
-                Canvas?.Dispose();
-                Canvas = new SkiaCanvas(_gl, new Vector2D<uint>(Width, Height));
+                if (Canvas == null)
+                {
+                    Canvas = new SkiaCanvas(_gl, new Vector2D<uint>(Width, Height));
+                }
+                else
+                {
+                    Canvas.UpdateSize(new Vector2D<uint>(Width, Height));
+                }
 
                 IsUpdateLayout = false;
             }
@@ -131,9 +137,6 @@ public unsafe class BaseControl
         _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.ViewUniform), 1, false, (float*)&view);
         _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.ProjectionUniform), 1, false, (float*)&projection);
 
-        canvas.UpdateVertexBuffer(new Rectangle<float>(0.0f, 0.0f, Width, Height));
-        canvas.UpdateTexCoordBuffer();
-
         _gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
         _gl.VertexAttribPointer(positionAttrib, 3, GLEnum.Float, false, 0, null);
 
@@ -141,7 +144,7 @@ public unsafe class BaseControl
         _gl.VertexAttribPointer(texCoordAttrib, 2, GLEnum.Float, false, 0, null);
 
         _gl.ActiveTexture(GLEnum.Texture0);
-        _gl.BindTexture(GLEnum.Texture2D, canvas.Framebuffer.DrawTexture);
+        _gl.BindTexture(GLEnum.Texture2D, canvas.Texture.TextureId);
         _gl.Uniform1(textureProgram.GetUniformLocation(TextureFragment.TexUniform), 0);
 
         _gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);

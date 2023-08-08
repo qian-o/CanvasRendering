@@ -16,29 +16,14 @@ public unsafe class SkiaCanvas : ICanvas
     public bool IsDrawing { get; private set; }
 
     /// <summary>
-    /// 记录之前的帧缓冲区
-    /// </summary>
-    public uint RecordFbo { get; private set; }
-
-    /// <summary>
-    /// 记录之前的位置
-    /// </summary>
-    public Vector2D<int> RecordPosition { get; private set; }
-
-    /// <summary>
-    /// 记录之前的大小
-    /// </summary>
-    public Vector2D<uint> RecordSize { get; private set; }
-
-    /// <summary>
     /// 画板大小
     /// </summary>
-    public Vector2D<uint> Size { get; }
+    public Vector2D<uint> Size { get; private set; }
 
     /// <summary>
-    /// 帧缓冲区
+    /// 纹理
     /// </summary>
-    public Framebuffer Framebuffer { get; private set; }
+    public Texture Texture { get; private set; }
 
     /// <summary>
     /// 顶点坐标缓冲区
@@ -50,10 +35,9 @@ public unsafe class SkiaCanvas : ICanvas
     /// </summary>
     public uint TexCoordBuffer { get; private set; }
 
-    public GRContext SkiaContext { get; private set; }
-
-    public GRBackendRenderTarget RenderTarget { get; private set; }
-
+    /// <summary>
+    /// Skia画板
+    /// </summary>
     public SKSurface Surface { get; private set; }
 
     public SkiaCanvas(GL gl, Vector2D<uint> size)
@@ -69,75 +53,74 @@ public unsafe class SkiaCanvas : ICanvas
     /// </summary>
     private void Initialization()
     {
-        Framebuffer = new Framebuffer(_gl, Size);
+        Texture = new Texture(_gl, GLEnum.Rgba, GLEnum.UnsignedByte);
 
-        // 顶点坐标系
+        VertexBuffer = _gl.GenBuffer();
+        float[] vertices = new float[]
         {
-            float[] vertices = new float[12];
+            0.0f, 0.0f, 0.0f,
+            0.0f, Size.Y, 0.0f,
+            Size.X, 0.0f, 0.0f,
+            Size.X, Size.Y, 0.0f
+        };
+        _gl.BindBuffer(GLEnum.ArrayBuffer, VertexBuffer);
+        _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.DynamicDraw);
+        _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
 
-            VertexBuffer = _gl.GenBuffer();
-            _gl.BindBuffer(GLEnum.ArrayBuffer, VertexBuffer);
-            _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(vertices.Length * sizeof(float)), vertices, GLEnum.DynamicDraw);
-            _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-        }
 
-        // 纹理坐标系
+        TexCoordBuffer = _gl.GenBuffer();
+        float[] texCoords = new float[]
         {
-            float[] texCoords = new float[8];
+            0, 0,
+            0, 1,
+            1, 0,
+            1, 1
+        };
+        _gl.BindBuffer(GLEnum.ArrayBuffer, TexCoordBuffer);
+        _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(texCoords.Length * sizeof(float)), texCoords, GLEnum.StaticDraw);
+        _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
 
-            TexCoordBuffer = _gl.GenBuffer();
-            _gl.BindBuffer(GLEnum.ArrayBuffer, TexCoordBuffer);
-            _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(texCoords.Length * sizeof(float)), texCoords, GLEnum.DynamicDraw);
-            _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-        }
+        Surface = SKSurface.Create(new SKImageInfo((int)Size.X, (int)Size.Y, SKColorType.Rgba8888, SKAlphaType.Premul));
+    }
 
-        SkiaContext = GRContext.CreateGl();
+    public void UpdateSize(Vector2D<uint> size)
+    {
+        Size = size;
+
+        float[] vertices = new float[]
+        {
+            0.0f, 0.0f, 0.0f,
+            0.0f, Size.Y, 0.0f,
+            Size.X, 0.0f, 0.0f,
+            Size.X, Size.Y, 0.0f
+        };
+        _gl.BindBuffer(GLEnum.ArrayBuffer, VertexBuffer);
+        _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(vertices.Length * sizeof(float)), vertices);
+        _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
+
+        Surface.Dispose();
+        Surface = SKSurface.Create(new SKImageInfo((int)Size.X, (int)Size.Y, SKColorType.Rgba8888, SKAlphaType.Premul));
     }
 
     /// <summary>
-    /// 开始绘制（记录之前的帧缓冲及视口大小）
+    /// 开始绘制
     /// </summary>
     public void Begin()
     {
         if (!IsDrawing)
         {
-            int[] viewport = new int[4];
-            _gl.GetInteger(GLEnum.FramebufferBinding, out int fbo);
-            _gl.GetInteger(GLEnum.Viewport, viewport);
-
-            RecordFbo = (uint)fbo;
-            RecordPosition = new Vector2D<int>(viewport[0], viewport[1]);
-            RecordSize = new Vector2D<uint>((uint)viewport[2], (uint)viewport[3]);
-
-            _gl.BindFramebuffer(GLEnum.Framebuffer, Framebuffer.DrawFbo);
-            _gl.Viewport(0, 0, Size.X, Size.Y);
-
-            if (RenderTarget == null)
-            {
-                _gl.GetInteger(GLEnum.Samples, out int samples);
-                _gl.GetInteger(GLEnum.Stencil, out int stencil);
-
-                RenderTarget = new GRBackendRenderTarget((int)Size.X, (int)Size.Y, samples, stencil, new GRGlFramebufferInfo(Framebuffer.DrawFbo, SKColorType.Rgba8888.ToGlSizedFormat()));
-                Surface = SKSurface.Create(SkiaContext, RenderTarget, GRSurfaceOrigin.TopLeft, SKColorType.Rgba8888);
-            }
-
             IsDrawing = true;
         }
     }
 
     /// <summary>
-    /// 结束绘制（还原之前记录的帧缓冲及视口大小）
+    /// 结束绘制
     /// </summary>
     public void End()
     {
         if (IsDrawing)
         {
-            SkiaContext.Flush();
-            SkiaContext.ResetContext();
-
-            _gl.BindFramebuffer(GLEnum.Framebuffer, RecordFbo);
-            _gl.Viewport(RecordPosition.X, RecordPosition.Y, RecordSize.X, RecordSize.Y);
-
+            Texture.UpdateImage(Size, (void*)Surface.Snapshot().PeekPixels().GetPixels());
             IsDrawing = false;
         }
     }
@@ -147,8 +130,7 @@ public unsafe class SkiaCanvas : ICanvas
     /// </summary>
     public void Clear()
     {
-        _gl.ClearColor(Color.Transparent);
-        _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+        Surface.Canvas.Clear(SKColors.White);
     }
 
     /// <summary>
@@ -206,68 +188,14 @@ public unsafe class SkiaCanvas : ICanvas
         Surface.Canvas.DrawText(text, point.X, point.Y, SkiaPaintHelper.GetTextPaint(new SKColor(color.R, color.G, color.B, color.A), size, fontPath));
     }
 
-    /// <summary>
-    /// 更新当前画板的顶点缓冲区
-    /// </summary>
-    /// <param name="rectangle">绘制该画板时的坐标及大小</param>
-    public void UpdateVertexBuffer(Rectangle<float> rectangle)
-    {
-        Vector3D<float> point1 = new(rectangle.Origin.X, rectangle.Origin.Y, 0.0f);
-
-        Vector3D<float> point2 = new(rectangle.Origin.X, rectangle.Max.Y, 0.0f);
-
-        Vector3D<float> point3 = new(rectangle.Max.X, rectangle.Origin.Y, 0.0f);
-
-        Vector3D<float> point4 = new(rectangle.Max.X, rectangle.Max.Y, 0.0f);
-
-        float[] vertices = new float[] {
-            point1.X, point1.Y, point1.Z,
-            point2.X, point2.Y, point2.Z,
-            point3.X, point3.Y, point3.Z,
-            point4.X, point4.Y, point4.Z
-        };
-
-        _gl.BindBuffer(GLEnum.ArrayBuffer, VertexBuffer);
-        _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(vertices.Length * sizeof(float)), vertices);
-        _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-    }
-
-    /// <summary>
-    /// 更新当前画板的纹理缓冲区
-    /// </summary>
-    public void UpdateTexCoordBuffer()
-    {
-        Vector2D<float> point1 = new(0, 0);
-
-        Vector2D<float> point2 = new(0, 1);
-
-        Vector2D<float> point3 = new(1, 0);
-
-        Vector2D<float> point4 = new(1, 1);
-
-        float[] texCoords = new float[] {
-            point1.X, point1.Y,
-            point2.X, point2.Y,
-            point3.X, point3.Y,
-            point4.X, point4.Y
-        };
-
-        _gl.BindBuffer(GLEnum.ArrayBuffer, TexCoordBuffer);
-        _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(texCoords.Length * sizeof(float)), texCoords);
-        _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
-    }
-
     public void Dispose()
     {
-        Framebuffer.Dispose();
+        Texture.Dispose();
 
         _gl.DeleteBuffer(VertexBuffer);
         _gl.DeleteBuffer(TexCoordBuffer);
 
-        SkiaContext.AbandonContext(true);
-        SkiaContext.Dispose();
-        RenderTarget?.Dispose();
-        Surface?.Dispose();
+        Surface.Dispose();
 
         GC.SuppressFinalize(this);
     }
