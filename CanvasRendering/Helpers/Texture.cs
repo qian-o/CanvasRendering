@@ -13,7 +13,7 @@ public unsafe class Texture : IDisposable
 
     public uint TextureId { get; }
 
-    public Vector2D<uint> CurrentSize { get; private set; }
+    public Vector2D<uint> Size { get; private set; }
 
     public Texture(GL gl, GLEnum format, GLEnum type)
     {
@@ -36,9 +36,9 @@ public unsafe class Texture : IDisposable
 
     public void AllocationBuffer(Vector2D<uint> size, out nint pboData)
     {
-        CurrentSize = size;
+        Size = size;
 
-        uint dataSize = size.X * size.Y * 4;
+        uint dataSize = Size.X * Size.Y * 4;
 
         _gl.BindBuffer(GLEnum.PixelUnpackBuffer, PboId);
         _gl.BindTexture(GLEnum.Texture2D, TextureId);
@@ -57,7 +57,7 @@ public unsafe class Texture : IDisposable
         _gl.BindTexture(GLEnum.Texture2D, TextureId);
 
         _gl.UnmapBuffer(GLEnum.PixelUnpackBuffer);
-        _gl.TexImage2D(GLEnum.Texture2D, 0, (int)GLEnum.Rgba8, CurrentSize.X, CurrentSize.Y, 0, _format, _type, null);
+        _gl.TexImage2D(GLEnum.Texture2D, 0, (int)GLEnum.Rgba8, Size.X, Size.Y, 0, _format, _type, null);
 
         _gl.BindTexture(GLEnum.Texture2D, 0);
         _gl.BindBuffer(GLEnum.PixelUnpackBuffer, 0);

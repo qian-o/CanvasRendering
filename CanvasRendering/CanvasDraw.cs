@@ -159,6 +159,32 @@ public unsafe static class CanvasDraw
 
         if (Mouse.IsButtonPressed(MouseButton.Left))
         {
+            Vector2D<float> vector = new(Mouse.Position.X, Mouse.Position.Y);
+
+            if (firstMove)
+            {
+                lastPos = vector;
+
+                firstMove = false;
+            }
+            else
+            {
+                float deltaX = vector.X - lastPos.X;
+                float deltaY = vector.Y - lastPos.Y;
+
+                Camera.Yaw += deltaX * 0.2f;
+                Camera.Pitch += -deltaY * 0.2f;
+
+                lastPos = vector;
+            }
+        }
+        else
+        {
+            firstMove = true;
+        }
+
+        if (Mouse.IsButtonPressed(MouseButton.Right))
+        {
             _angle++;
 
             _radians = _angle * MathF.PI / 180;
@@ -189,32 +215,6 @@ public unsafe static class CanvasDraw
             {
                 _translation--;
             }
-        }
-
-        if (Mouse.IsButtonPressed(MouseButton.Right))
-        {
-            Vector2D<float> vector = new(Mouse.Position.X, Mouse.Position.Y);
-
-            if (firstMove)
-            {
-                lastPos = vector;
-
-                firstMove = false;
-            }
-            else
-            {
-                float deltaX = vector.X - lastPos.X;
-                float deltaY = vector.Y - lastPos.Y;
-
-                Camera.Yaw += deltaX * 0.2f;
-                Camera.Pitch += -deltaY * 0.2f;
-
-                lastPos = vector;
-            }
-        }
-        else
-        {
-            firstMove = true;
         }
 
         if (Keyboard.IsKeyPressed(Key.W))
