@@ -5,7 +5,7 @@ namespace CanvasRendering.Contracts;
 
 public interface ICanvas : IDisposable
 {
-    void UpdateSize(Vector2D<uint> size);
+    void ResetSize(Vector2D<uint> size);
 
     void Begin();
 

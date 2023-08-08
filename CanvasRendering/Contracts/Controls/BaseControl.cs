@@ -88,7 +88,7 @@ public unsafe class BaseControl
                 }
                 else
                 {
-                    Canvas.UpdateSize(new Vector2D<uint>(Width, Height));
+                    Canvas.ResetSize(new Vector2D<uint>(Width, Height));
                 }
 
                 IsUpdateLayout = false;

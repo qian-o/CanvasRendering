@@ -80,10 +80,10 @@ public unsafe class SkiaCanvas : ICanvas
         _gl.BufferData<float>(GLEnum.ArrayBuffer, (uint)(texCoords.Length * sizeof(float)), texCoords, GLEnum.StaticDraw);
         _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
 
-        Surface = SKSurface.Create(new SKImageInfo((int)Size.X, (int)Size.Y, SKColorType.Rgba8888, SKAlphaType.Premul));
+        ResetSize(Size);
     }
 
-    public void UpdateSize(Vector2D<uint> size)
+    public void ResetSize(Vector2D<uint> size)
     {
         Size = size;
 
@@ -98,8 +98,10 @@ public unsafe class SkiaCanvas : ICanvas
         _gl.BufferSubData<float>(GLEnum.ArrayBuffer, 0, (uint)(vertices.Length * sizeof(float)), vertices);
         _gl.BindBuffer(GLEnum.ArrayBuffer, 0);
 
-        Surface.Dispose();
-        Surface = SKSurface.Create(new SKImageInfo((int)Size.X, (int)Size.Y, SKColorType.Rgba8888, SKAlphaType.Premul));
+        Surface?.Dispose();
+
+        Texture.AllocationBuffer(Size, out nint pboData);
+        Surface = SKSurface.Create(new SKImageInfo((int)Size.X, (int)Size.Y, SKColorType.Rgba8888, SKAlphaType.Premul), pboData);
     }
 
     /// <summary>
@@ -120,7 +122,7 @@ public unsafe class SkiaCanvas : ICanvas
     {
         if (IsDrawing)
         {
-            Texture.UpdateImage(Size, (void*)Surface.Snapshot().PeekPixels().GetPixels());
+            Texture.FlushTexture();
             IsDrawing = false;
         }
     }

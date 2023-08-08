@@ -9,6 +9,8 @@ public unsafe class Texture : IDisposable
     private readonly GLEnum _format;
     private readonly GLEnum _type;
 
+    public uint PboId { get; }
+
     public uint TextureId { get; }
 
     public Vector2D<uint> CurrentSize { get; private set; }
@@ -19,6 +21,7 @@ public unsafe class Texture : IDisposable
         _format = format;
         _type = type;
 
+        PboId = _gl.GenBuffer();
         TextureId = _gl.GenTexture();
 
         _gl.BindTexture(GLEnum.Texture2D, TextureId);
@@ -31,26 +34,38 @@ public unsafe class Texture : IDisposable
         _gl.BindTexture(GLEnum.Texture2D, 0);
     }
 
-    public void UpdateImage(Vector2D<uint> size, void* pixels)
+    public void AllocationBuffer(Vector2D<uint> size, out nint pboData)
     {
+        CurrentSize = size;
+
+        uint dataSize = size.X * size.Y * 4;
+
+        _gl.BindBuffer(GLEnum.PixelUnpackBuffer, PboId);
         _gl.BindTexture(GLEnum.Texture2D, TextureId);
 
-        if (CurrentSize == size)
-        {
-            _gl.TexSubImage2D(GLEnum.Texture2D, 0, 0, 0, size.X, size.Y, _format, _type, pixels);
-        }
-        else
-        {
-            _gl.TexImage2D(GLEnum.Texture2D, 0, (int)GLEnum.Rgba8, size.X, size.Y, 0, _format, _type, pixels);
+        _gl.BufferData(GLEnum.PixelUnpackBuffer, dataSize, null, GLEnum.StreamDraw);
 
-            CurrentSize = size;
-        }
+        pboData = (nint)_gl.MapBufferRange(GLEnum.PixelUnpackBuffer, 0, dataSize, (uint)(GLEnum.MapReadBit | GLEnum.MapWriteBit));
 
         _gl.BindTexture(GLEnum.Texture2D, 0);
+        _gl.BindBuffer(GLEnum.PixelUnpackBuffer, 0);
+    }
+
+    public void FlushTexture()
+    {
+        _gl.BindBuffer(GLEnum.PixelUnpackBuffer, PboId);
+        _gl.BindTexture(GLEnum.Texture2D, TextureId);
+
+        _gl.UnmapBuffer(GLEnum.PixelUnpackBuffer);
+        _gl.TexImage2D(GLEnum.Texture2D, 0, (int)GLEnum.Rgba8, CurrentSize.X, CurrentSize.Y, 0, _format, _type, null);
+
+        _gl.BindTexture(GLEnum.Texture2D, 0);
+        _gl.BindBuffer(GLEnum.PixelUnpackBuffer, 0);
     }
 
     public void Dispose()
     {
+        _gl.DeleteBuffer(PboId);
         _gl.DeleteTexture(TextureId);
 
         GC.SuppressFinalize(this);
