@@ -9,6 +9,9 @@
 		<ApplicationVersion>1</ApplicationVersion>
 		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<AndroidPackageFormat>apk</AndroidPackageFormat>
+	</PropertyGroup>
 	<ItemGroup>
 		<None Remove="Assets\Founder_FW_S.ttf" />
 	</ItemGroup>
