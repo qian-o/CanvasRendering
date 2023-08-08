@@ -23,11 +23,11 @@ public class Program
         options.Title = "Texture Rendering";
         options.Size = new Vector2D<int>(800, 600);
         options.API = new GraphicsAPI(ContextAPI.OpenGLES, new APIVersion(3, 2));
-        options.Samples = 16;
+        options.Samples = 8;
         window = Window.Create(options);
 
         window.Load += Window_Load;
-        window.Resize += (d) => { CanvasDraw.Resize(d); window.DoUpdate(); window.DoRender(); };
+        window.FramebufferResize += CanvasDraw.FramebufferResize;
         window.Render += CanvasDraw.Render;
         window.Update += CanvasDraw.Update;
 

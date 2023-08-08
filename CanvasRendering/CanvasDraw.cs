@@ -18,6 +18,7 @@ public unsafe static class CanvasDraw
     private static TestControl1 _c2;
     private static TestControl1 _c3;
     private static TestControl1 _c4;
+    private static UniformGrid _uniformGrid;
     private static FpsControl fpsControl;
     private static int _angle;
     private static float _radians;
@@ -73,11 +74,21 @@ public unsafe static class CanvasDraw
         {
             Text = "Translation"
         };
+        _uniformGrid = new UniformGrid()
+        {
+            Rows = 10,
+            Columns = 100
+        };
+
+        for (int i = 0; i < 1000; i++)
+        {
+            _uniformGrid.Child.Add(new TestControl1(_gl) { Text = (i + 1).ToString() });
+        }
 
         fpsControl = new FpsControl(_gl);
     }
 
-    public static void Resize(Vector2D<int> obj)
+    public static void FramebufferResize(Vector2D<int> obj)
     {
         Width = obj.X;
         Height = obj.Y;
@@ -104,6 +115,20 @@ public unsafe static class CanvasDraw
 
         _c4.StartRender();
         _c4.DrawOnWindow(_textureProgram);
+
+        _uniformGrid.Width = Width;
+        _uniformGrid.Height = Height;
+        _uniformGrid.Render();
+
+        foreach (var item in _uniformGrid.Child)
+        {
+            item.StartRender();
+        }
+
+        foreach (var item in _uniformGrid.Child)
+        {
+            item.DrawOnWindow(_textureProgram);
+        }
 
         fpsControl.StartRender();
         fpsControl.DrawOnWindow(_textureProgram);

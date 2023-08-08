@@ -8,8 +8,6 @@ namespace CanvasRendering.Helpers;
 
 public unsafe class SkiaCanvas : ICanvas
 {
-    private static readonly Dictionary<string, SKTypeface> _typeface = new();
-
     private readonly GL _gl;
 
     /// <summary>
@@ -169,16 +167,7 @@ public unsafe class SkiaCanvas : ICanvas
     /// <param name="color">填充颜色</param>
     public void DrawRectangle(RectangleF rectangle, Color color)
     {
-        using SKPaint paint = new()
-        {
-            IsAntialias = true,
-            IsDither = true,
-            FilterQuality = SKFilterQuality.High,
-            Color = new SKColor(color.R, color.G, color.B, color.A),
-            BlendMode = SKBlendMode.Src
-        };
-
-        Surface.Canvas.DrawRect(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, paint);
+        Surface.Canvas.DrawRect(rectangle.X, rectangle.Y, rectangle.Width, rectangle.Height, SkiaPaintHelper.GetFillPaint(new SKColor(color.R, color.G, color.B, color.A), SKBlendMode.Src));
     }
 
     /// <summary>
@@ -189,15 +178,7 @@ public unsafe class SkiaCanvas : ICanvas
     /// <param name="color">填充颜色</param>
     public void DrawCircle(PointF origin, float radius, Color color)
     {
-        using SKPaint paint = new()
-        {
-            IsAntialias = true,
-            IsDither = true,
-            FilterQuality = SKFilterQuality.High,
-            Color = new SKColor(color.R, color.G, color.B, color.A)
-        };
-
-        Surface.Canvas.DrawCircle(origin.X, origin.Y, radius, paint);
+        Surface.Canvas.DrawCircle(origin.X, origin.Y, radius, SkiaPaintHelper.GetFillPaint(new SKColor(color.R, color.G, color.B, color.A), SKBlendMode.Src));
     }
 
     /// <summary>
@@ -209,17 +190,7 @@ public unsafe class SkiaCanvas : ICanvas
     /// <param name="color">填充颜色</param>
     public void DrawLine(PointF start, PointF end, float width, Color color)
     {
-        using SKPaint paint = new()
-        {
-            IsAntialias = true,
-            IsDither = true,
-            FilterQuality = SKFilterQuality.High,
-            Color = new SKColor(color.R, color.G, color.B, color.A),
-            StrokeWidth = width,
-            Style = SKPaintStyle.Stroke
-        };
-
-        Surface.Canvas.DrawLine(start.X, start.Y, end.X, end.Y, paint);
+        Surface.Canvas.DrawLine(start.X, start.Y, end.X, end.Y, SkiaPaintHelper.GetStrokePaint(new SKColor(color.R, color.G, color.B, color.A), width));
     }
 
     /// <summary>
@@ -232,24 +203,7 @@ public unsafe class SkiaCanvas : ICanvas
     /// <param name="fontPath">字体文件</param>
     public void DrawString(Point point, string text, uint size, Color color, string fontPath)
     {
-        if (!_typeface.TryGetValue(fontPath, out SKTypeface typeface))
-        {
-            typeface = SKTypeface.FromStream(FileManager.LoadFile(fontPath));
-
-            _typeface.Add(fontPath, typeface);
-        }
-
-        using SKPaint paint = new()
-        {
-            IsAntialias = true,
-            IsDither = true,
-            FilterQuality = SKFilterQuality.High,
-            Color = new SKColor(color.R, color.G, color.B, color.A),
-            TextSize = size,
-            Typeface = typeface
-        };
-
-        Surface.Canvas.DrawText(text, point.X, point.Y, paint);
+        Surface.Canvas.DrawText(text, point.X, point.Y, SkiaPaintHelper.GetTextPaint(new SKColor(color.R, color.G, color.B, color.A), size, fontPath));
     }
 
     /// <summary>

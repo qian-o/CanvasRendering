@@ -18,6 +18,8 @@ public class TestControl1 : BaseControl
     {
         Canvas.DrawFill(Fill);
         Canvas.DrawRectangle(new RectangleF(100, 100, Width, Height), Color.FromArgb(255, 220, 1));
+        Canvas.DrawCircle(new PointF(50, 50), 50, Color.FromArgb(101, 151, 255));
+        Canvas.DrawLine(new PointF(0, 0), new PointF(Width, Height), 5, Color.FromArgb(11, 120, 211));
         Canvas.DrawString(new Point(20, 40), Text, 24, Color.Black, CanvasDraw.FontPath);
     }
 }
