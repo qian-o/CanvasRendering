@@ -14,6 +14,8 @@ public class MainActivity : SilkActivity
 
     protected override void OnRun()
     {
+        string version = GetOpenGLESVersion();
+
         FileManager.SetLoadFileDelegate((path) =>
         {
             using Stream s = Assets.Open(path);
@@ -30,7 +32,7 @@ public class MainActivity : SilkActivity
         view = Silk.NET.Windowing.Window.GetView(options);
 
         view.Load += View_Load;
-        view.FramebufferResize += CanvasDraw.FramebufferResize;
+        view.FramebufferResize += (d) => { CanvasDraw.FramebufferResize(d); view.DoUpdate(); view.DoRender(); };
         view.Render += CanvasDraw.Render;
         view.Update += CanvasDraw.Update;
 
@@ -45,5 +47,12 @@ public class MainActivity : SilkActivity
 
         CanvasDraw.Mouse = inputContext.Mice[0];
         CanvasDraw.Keyboard = inputContext.Keyboards[0];
+    }
+
+    public string GetOpenGLESVersion()
+    {
+        ActivityManager manager = (ActivityManager)GetSystemService(ActivityService);
+
+        return manager.DeviceConfigurationInfo.GlEsVersion;
     }
 }
