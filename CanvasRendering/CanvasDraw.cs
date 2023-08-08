@@ -123,10 +123,6 @@ public unsafe static class CanvasDraw
         foreach (var item in _uniformGrid.Child)
         {
             item.StartRender();
-        }
-
-        foreach (var item in _uniformGrid.Child)
-        {
             item.DrawOnWindow(_textureProgram);
         }
 
