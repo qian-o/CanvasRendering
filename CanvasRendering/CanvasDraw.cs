@@ -1,4 +1,5 @@
-﻿using CanvasRendering.Controls;
+﻿using CanvasRendering.Contracts.Controls;
+using CanvasRendering.Controls;
 using CanvasRendering.Helpers;
 using Silk.NET.Input;
 using Silk.NET.Maths;
@@ -120,10 +121,10 @@ public unsafe static class CanvasDraw
         _uniformGrid.Height = Height * 4;
         _uniformGrid.Render();
 
-        foreach (var item in _uniformGrid.Child)
+        foreach (BaseControl control in _uniformGrid.Child)
         {
-            item.StartRender();
-            item.DrawOnWindow(_textureProgram);
+            control.StartRender();
+            control.DrawOnWindow(_textureProgram);
         }
 
         fpsControl.StartRender();
