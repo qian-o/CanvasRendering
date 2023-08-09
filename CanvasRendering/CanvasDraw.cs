@@ -53,8 +53,6 @@ public unsafe static class CanvasDraw
 
         Width = width;
         Height = height;
-        Camera.Width = Width;
-        Camera.Height = Height;
 
         _c1 = new TestControl1(_gl)
         {
@@ -87,50 +85,6 @@ public unsafe static class CanvasDraw
         }
 
         fpsControl = new FpsControl(_gl);
-    }
-
-    public static void FramebufferResize(Vector2D<int> obj)
-    {
-        Width = obj.X;
-        Height = obj.Y;
-
-        _gl.Viewport(0, 0, (uint)Width, (uint)Height);
-
-        Camera.Width = Width;
-        Camera.Height = Height;
-    }
-
-    public static void Render(double obj)
-    {
-        _gl.ClearColor(Color.Black);
-        _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
-
-        _c1.StartRender();
-        _c1.DrawOnWindow(_textureProgram);
-
-        _c2.StartRender();
-        _c2.DrawOnWindow(_textureProgram);
-
-        _c3.StartRender();
-        _c3.DrawOnWindow(_textureProgram);
-
-        _c4.StartRender();
-        _c4.DrawOnWindow(_textureProgram);
-
-        _uniformGrid.Width = Width * 4;
-        _uniformGrid.Height = Height * 4;
-        _uniformGrid.Render();
-
-        foreach (BaseControl control in _uniformGrid.Child)
-        {
-            control.StartRender();
-            control.DrawOnWindow(_textureProgram);
-        }
-
-        fpsControl.StartRender();
-        fpsControl.DrawOnWindow(_textureProgram);
-
-        fpsSample.Add(1.0d / obj);
     }
 
     public static void Update(double obj)
@@ -259,5 +213,46 @@ public unsafe static class CanvasDraw
 
             fpsSample.Clear();
         }
+    }
+
+    public static void Render(double obj)
+    {
+        _gl.ClearColor(Color.Black);
+        _gl.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit | ClearBufferMask.StencilBufferBit);
+
+        _c1.StartRender();
+        _c1.DrawOnWindow(_textureProgram);
+
+        _c2.StartRender();
+        _c2.DrawOnWindow(_textureProgram);
+
+        _c3.StartRender();
+        _c3.DrawOnWindow(_textureProgram);
+
+        _c4.StartRender();
+        _c4.DrawOnWindow(_textureProgram);
+
+        _uniformGrid.Width = Width * 4;
+        _uniformGrid.Height = Height * 4;
+        _uniformGrid.Render();
+
+        foreach (BaseControl control in _uniformGrid.Child)
+        {
+            control.StartRender();
+            control.DrawOnWindow(_textureProgram);
+        }
+
+        fpsControl.StartRender();
+        fpsControl.DrawOnWindow(_textureProgram);
+
+        fpsSample.Add(1.0d / obj);
+    }
+
+    public static void FramebufferResize(Vector2D<int> obj)
+    {
+        Width = obj.X;
+        Height = obj.Y;
+
+        _gl.Viewport(obj);
     }
 }

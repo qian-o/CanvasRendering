@@ -11,10 +11,6 @@ public class Camera
     private float yaw = -MathHelper.PiOver2;
     private float fov = MathHelper.PiOver2;
 
-    public int Width { get; set; }
-
-    public int Height { get; set; }
-
     public Vector3D<float> Position { get; set; } = new(0.0f, 0.0f, 1.0f);
 
     public Vector3D<float> Front => front;

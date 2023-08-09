@@ -32,9 +32,9 @@ public class MainActivity : SilkActivity
         view = Silk.NET.Windowing.Window.GetView(options);
 
         view.Load += View_Load;
-        view.FramebufferResize += (d) => { CanvasDraw.FramebufferResize(d); view.DoUpdate(); view.DoRender(); };
-        view.Render += CanvasDraw.Render;
         view.Update += CanvasDraw.Update;
+        view.Render += CanvasDraw.Render;
+        view.FramebufferResize += (d) => { CanvasDraw.FramebufferResize(d); view.DoUpdate(); view.DoRender(); };
 
         view.Run();
     }
