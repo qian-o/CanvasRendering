@@ -69,7 +69,7 @@ public class ShaderProgram : IDisposable
         _gl.UseProgram(0);
     }
 
-    public int GetAttribLocation(string name)
+    public int GetAttrib(string name)
     {
         if (!_attribLocations.TryGetValue(name, out int value))
         {
@@ -81,7 +81,7 @@ public class ShaderProgram : IDisposable
         return value;
     }
 
-    public int GetUniformLocation(string name)
+    public int GetUniform(string name)
     {
         if (!_uniformLocations.TryGetValue(name, out int value))
         {

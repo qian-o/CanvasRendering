@@ -123,8 +123,8 @@ public unsafe class BaseControl
             _gl.Scissor(clip.Value.Origin.X, CanvasDraw.Height - clip.Value.Max.Y, (uint)clip.Value.Size.X, (uint)clip.Value.Size.Y);
         }
 
-        uint positionAttrib = (uint)textureProgram.GetAttribLocation(DefaultVertex.PositionAttrib);
-        uint texCoordAttrib = (uint)textureProgram.GetAttribLocation(DefaultVertex.TexCoordAttrib);
+        uint positionAttrib = (uint)textureProgram.GetAttrib(DefaultVertex.PositionAttrib);
+        uint texCoordAttrib = (uint)textureProgram.GetAttrib(DefaultVertex.TexCoordAttrib);
 
         _gl.EnableVertexAttribArray(positionAttrib);
         _gl.EnableVertexAttribArray(texCoordAttrib);
@@ -133,9 +133,9 @@ public unsafe class BaseControl
 
         GetMatrix(out Matrix4X4<float> transform, out Matrix4X4<float> view, out Matrix4X4<float> projection);
 
-        _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.TransformUniform), 1, false, (float*)&transform);
-        _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.ViewUniform), 1, false, (float*)&view);
-        _gl.UniformMatrix4(textureProgram.GetUniformLocation(DefaultVertex.ProjectionUniform), 1, false, (float*)&projection);
+        _gl.UniformMatrix4(textureProgram.GetUniform(DefaultVertex.TransformUniform), 1, false, (float*)&transform);
+        _gl.UniformMatrix4(textureProgram.GetUniform(DefaultVertex.ViewUniform), 1, false, (float*)&view);
+        _gl.UniformMatrix4(textureProgram.GetUniform(DefaultVertex.ProjectionUniform), 1, false, (float*)&projection);
 
         _gl.BindBuffer(GLEnum.ArrayBuffer, canvas.VertexBuffer);
         _gl.VertexAttribPointer(positionAttrib, 3, GLEnum.Float, false, 0, null);
@@ -145,7 +145,7 @@ public unsafe class BaseControl
 
         _gl.ActiveTexture(GLEnum.Texture0);
         _gl.BindTexture(GLEnum.Texture2D, canvas.Texture.TextureId);
-        _gl.Uniform1(textureProgram.GetUniformLocation(TextureFragment.TexUniform), 0);
+        _gl.Uniform1(textureProgram.GetUniform(TextureFragment.TexUniform), 0);
 
         _gl.DrawArrays(GLEnum.TriangleStrip, 0, 4);
 
